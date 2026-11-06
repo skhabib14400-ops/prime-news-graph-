@@ -6,3 +6,20 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Cache & temporary directories
+.cache/
+.vite/
+.temp/
+
+# Large binary archives & video screenrecordings (avoids GitHub API blob limit / 422 errors)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.mp4
+*.mov
+*.avi
+*.webm
+public/assets/aistudio/
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Calendar, ArrowRight, Eye } from 'lucide-react';
 import { Article } from '../types/news';
 import { useLanguage } from '../context/LanguageContext';
+import { normalizeImageUrl, handleImageError } from '../utils/imageHelper';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -94,8 +95,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               >
                 <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                   <img
-                    src={article.featured_image}
+                    src={normalizeImageUrl(article.featured_image)}
                     alt={lang === 'bn' ? article.title_bn : article.title_en}
+                    onError={handleImageError}
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover"
                   />

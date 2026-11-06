@@ -458,7 +458,8 @@ async function createServer() {
 
     // 3. User Authorization Check (Only the designated owner account is authorized)
     const admin = db.getAdminByUsername(username || '');
-    if (!admin || admin.username !== 'alamin11gtN') {
+    const isOwner = admin && (admin.username === 'amazonshopping14264@gmail.com' || admin.username === 'alamin11gtN');
+    if (!isOwner) {
       authSecurity.recordFailedAttempt(clientIp);
       authSecurity.logEvent('login_failed', username || 'unknown', clientIp, userAgent, 'Unauthorized admin account attempt');
       return res.status(401).json({
@@ -500,7 +501,7 @@ async function createServer() {
     const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || '127.0.0.1';
     const userAgent = req.headers['user-agent'] || 'Unknown';
 
-    const targetUser = username ? db.getAdminByUsername(username) : db.getAdminByUsername('alamin11gtN');
+    const targetUser = username ? db.getAdminByUsername(username) : (db.getAdminByUsername('amazonshopping14264@gmail.com') || db.getAdminByUsername('alamin11gtN'));
     if (!targetUser) {
       return res.status(401).json({ success: false, message: 'Invalid admin account.' });
     }
@@ -551,7 +552,8 @@ async function createServer() {
     const userAgent = req.headers['user-agent'] || 'Unknown';
 
     const admin = db.getAdminByUsername(username || '');
-    if (!admin || admin.username !== 'alamin11gtN') {
+    const isOwner = admin && (admin.username === 'amazonshopping14264@gmail.com' || admin.username === 'alamin11gtN');
+    if (!isOwner) {
       authSecurity.logEvent('login_failed', username || 'unknown', clientIp, userAgent, 'Unauthorized login attempt');
       return res.status(401).json({ success: false, message: 'Unauthorized. Access restricted to authorized portal owner.' });
     }
@@ -674,7 +676,8 @@ async function createServer() {
     }
 
     const admin = db.getAdminByUsername(username);
-    if (!admin || admin.username !== 'alamin11gtN') {
+    const isOwner = admin && (admin.username === 'amazonshopping14264@gmail.com' || admin.username === 'alamin11gtN');
+    if (!isOwner) {
       authSecurity.logEvent('login_failed', username, clientIp, userAgent, 'Invalid admin username for password recovery');
       return res.status(401).json({ success: false, message: 'Invalid admin username or recovery code.' });
     }
@@ -901,7 +904,7 @@ Sitemap: ${APP_URL}/sitemap.xml
         'url': domain,
         'logo': {
           '@type': 'ImageObject',
-          'url': `${domain}/src/assets/images/news_world_summit_1793801922828.jpg`
+          'url': `${domain}/assets/images/news_world_summit_1793801922828.jpg`
         }
       },
       'description': description,

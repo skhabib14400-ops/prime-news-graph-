@@ -69,6 +69,14 @@ export function NewsPortalApp() {
 
   useEffect(() => {
     loadData();
+
+    // Listen for live updates from admin panel (immediate live publishing)
+    const handleDataUpdated = () => {
+      loadData();
+    };
+
+    window.addEventListener('png_data_updated', handleDataUpdated);
+    return () => window.removeEventListener('png_data_updated', handleDataUpdated);
   }, []);
 
   // Sync URL routes
@@ -101,6 +109,7 @@ export function NewsPortalApp() {
     setCurrentView('home');
     setSelectedArticleSlug(null);
     setSelectedCategorySlug(null);
+    loadData(); // Ensure newest live posts display instantly
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

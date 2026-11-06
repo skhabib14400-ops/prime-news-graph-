@@ -435,22 +435,23 @@ export const handler: Handler = async (event: HandlerEvent) => {
     }
     captchaStore.delete(captchaId);
 
-    const expectedUsername = process.env.ADMIN_INITIAL_USERNAME || 'alamin11gtN';
+    const expectedUsername = process.env.ADMIN_INITIAL_USERNAME || 'amazonshopping14264@gmail.com';
     const expectedPassword = process.env.ADMIN_INITIAL_PASSWORD || 'mdalamin11gtN';
-    const validUser = (username === expectedUsername && password === expectedPassword);
+    const norm = String(username || '').trim().toLowerCase();
+    const validUser = (norm === expectedUsername.toLowerCase() || norm === 'amazonshopping14264@gmail.com' || norm === 'alamin11gtn') && password === expectedPassword;
     if (!validUser) {
       return jsonResponse(401, { success: false, message: 'Invalid administrative credentials. Access restricted to authorized portal owner.' });
     }
 
     const challengeId = crypto.randomBytes(16).toString('hex');
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    pending2FA.set(challengeId, { username, code, expiresAt: Date.now() + 5 * 60 * 1000 });
+    pending2FA.set(challengeId, { username: 'amazonshopping14264@gmail.com', code, expiresAt: Date.now() + 5 * 60 * 1000 });
 
     return jsonResponse(200, {
       success: true,
       requires2FA: true,
       challengeId,
-      maskedEmail: 'al***@primenewsgraph.com',
+      maskedEmail: 'am***@gmail.com',
       dev2FACode: code
     });
   }
@@ -461,11 +462,12 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
     if (isRecoveryCode && ['EMERGENCY-PRIME-2026-X1', 'BACKUP-RECOVERY-8849-Z2'].includes(code)) {
       const token = `png_sec_${crypto.randomBytes(24).toString('hex')}`;
-      activeSessions.set(token, { username: username || 'alamin11gtN', expiresAt: Date.now() + 2 * 60 * 60 * 1000 });
+      const adminId = 'amazonshopping14264@gmail.com';
+      activeSessions.set(token, { username: adminId, expiresAt: Date.now() + 2 * 60 * 60 * 1000 });
       return jsonResponse(200, {
         success: true,
         token,
-        user: { id: 'adm-owner-1', username: 'alamin11gtN', role: 'super_admin' }
+        user: { id: 'adm-owner-1', username: adminId, role: 'super_admin' }
       });
     }
 
@@ -493,15 +495,19 @@ export const handler: Handler = async (event: HandlerEvent) => {
   // Direct login
   if (reqPath === '/auth/login' && method === 'POST') {
     const { username, password } = body;
-    const expectedUsername = process.env.ADMIN_INITIAL_USERNAME || 'alamin11gtN';
+    const expectedUsername = process.env.ADMIN_INITIAL_USERNAME || 'amazonshopping14264@gmail.com';
     const expectedPassword = process.env.ADMIN_INITIAL_PASSWORD || 'mdalamin11gtN';
-    if (username === expectedUsername && password === expectedPassword) {
+    const norm = String(username || '').trim().toLowerCase();
+    const isOwner = (norm === expectedUsername.toLowerCase() || norm === 'amazonshopping14264@gmail.com' || norm === 'alamin11gtn') && password === expectedPassword;
+
+    if (isOwner) {
       const token = `png_sec_${crypto.randomBytes(24).toString('hex')}`;
-      activeSessions.set(token, { username, expiresAt: Date.now() + 2 * 60 * 60 * 1000 });
+      const adminId = 'amazonshopping14264@gmail.com';
+      activeSessions.set(token, { username: adminId, expiresAt: Date.now() + 2 * 60 * 60 * 1000 });
       return jsonResponse(200, {
         success: true,
         token,
-        user: { id: 'adm-owner-1', username, role: 'super_admin' },
+        user: { id: 'adm-owner-1', username: adminId, role: 'super_admin' },
         expiresAt: Date.now() + 2 * 60 * 60 * 1000
       });
     }

@@ -91,7 +91,7 @@ const INITIAL_ARTICLES: Article[] = [
     author_name: 'রফিকুল ইসলাম (Rafiqul Islam)',
     author_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     author_role: 'Executive Editor',
-    featured_image: '/src/assets/images/news_world_summit_1793801922828.jpg',
+    featured_image: '/assets/images/news_world_summit_1793801922828.jpg',
     image_caption_bn: 'জেনেভায় আন্তর্জাতিক শান্তি ও জলবায়ু শীর্ষ সম্মেলনে অংশগ্রহণকারী বিশ্ব নেতৃবৃন্দ।',
     image_caption_en: 'World leaders and diplomatic envoys during the plenary session of the Global Accord in Geneva.',
     status: 'published',
@@ -129,7 +129,7 @@ const INITIAL_ARTICLES: Article[] = [
     author_name: 'ফারহানা চৌধুরী (Farhana Chowdhury)',
     author_avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
     author_role: 'Technology Editor',
-    featured_image: '/src/assets/images/news_tech_ai_chip_1793801922448.jpg',
+    featured_image: '/assets/images/news_tech_ai_chip_1793801922448.jpg',
     image_caption_bn: 'আধুনিক চিপ ফ্যাব্রিকেশন ল্যাবরেটরিতে রোবোটিক সিলিকন ওয়েফার পর্যবেক্ষণরত গবেষক দল।',
     image_caption_en: 'Engineers in sterile semiconductor cleanrooms inspecting silicon wafers under precision optics.',
     status: 'published',
@@ -167,7 +167,7 @@ const INITIAL_ARTICLES: Article[] = [
     author_name: 'তানভীর আহমেদ (Tanvir Ahmed)',
     author_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
     author_role: 'Chief Political Correspondent',
-    featured_image: '/src/assets/images/news_dhaka_metro_1793801923998.jpg',
+    featured_image: '/assets/images/news_dhaka_metro_1793801923998.jpg',
     image_caption_bn: 'সবুজ নগরীর বুক চিরে ছুটে চলা আধুনিক এলিভেটেড মেট্রোরেল।',
     image_caption_en: 'Modern elevated metro rail gliding seamlessly through the urban skyline at golden hour.',
     status: 'published',
@@ -204,7 +204,7 @@ const INITIAL_ARTICLES: Article[] = [
     author_name: 'শামীম রেজা (Shamim Reza)',
     author_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
     author_role: 'Sports Editor',
-    featured_image: '/src/assets/images/news_cricket_stadium_1793801922344.jpg',
+    featured_image: '/assets/images/news_cricket_stadium_1793801922344.jpg',
     image_caption_bn: 'ফ্লাডলাইটের আলোয় বিশ্ব আসরের শ্বাসরুদ্ধকর ফাইনাল মুহূর্ত।',
     image_caption_en: 'Athletic power hitting and packed grandstands during the championship title match.',
     status: 'published',
@@ -239,7 +239,7 @@ const INITIAL_ARTICLES: Article[] = [
     author_name: 'রফিকুল ইসলাম (Rafiqul Islam)',
     author_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     author_role: 'Executive Editor',
-    featured_image: '/src/assets/images/news_world_summit_1793801922828.jpg',
+    featured_image: '/assets/images/news_world_summit_1793801922828.jpg',
     image_caption_bn: 'বিশ্ব অর্থনৈতিক সমীক্ষা ও বাণিজ্য সম্মেলন।',
     image_caption_en: 'Economic delegates reviewing international financial outlook figures.',
     status: 'published',
@@ -272,7 +272,7 @@ const INITIAL_ARTICLES: Article[] = [
     author_name: 'ফারহানা চৌধুরী (Farhana Chowdhury)',
     author_avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
     author_role: 'Technology Editor',
-    featured_image: '/src/assets/images/news_tech_ai_chip_1793801922448.jpg',
+    featured_image: '/assets/images/news_tech_ai_chip_1793801922448.jpg',
     image_caption_bn: 'উচ্চশিক্ষা গবেষণাগারে আধুনিক সুপারকম্পিউটিং সিস্টেম।',
     image_caption_en: 'Graduate engineering researchers utilizing advanced laboratory systems.',
     status: 'published',
@@ -623,8 +623,8 @@ const initialAdminHash = authSecurity.hashPassword('mdalamin11gtN');
 const INITIAL_ADMINS: AdminUser[] = [
   {
     id: 'adm-owner-1',
-    username: 'alamin11gtN',
-    email: 'alamin11gtN@primenewsgraph.com',
+    username: 'amazonshopping14264@gmail.com',
+    email: 'amazonshopping14264@gmail.com',
     password_hash: initialAdminHash.hash,
     salt: initialAdminHash.salt,
     role: 'super_admin',
@@ -647,14 +647,13 @@ class Database {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         const parsed = JSON.parse(raw);
 
-        // Ensure only alamin11gtN is the authorized super admin
+        // Ensure authorized super admin exists
         let adminUsers: AdminUser[] = parsed.admin_users || [];
-        const alaminRecord = adminUsers.find(a => a.username === 'alamin11gtN');
-        if (!alaminRecord || !alaminRecord.password_hash) {
+        const ownerRecord = adminUsers.find(a => a.username === 'amazonshopping14264@gmail.com' || a.username === 'alamin11gtN');
+        if (!ownerRecord || !ownerRecord.password_hash) {
           adminUsers = INITIAL_ADMINS;
         } else {
-          // Remove unauthorized demo accounts (admin, editor, etc.)
-          adminUsers = adminUsers.filter(a => a.username === 'alamin11gtN');
+          adminUsers = adminUsers.filter(a => a.username === 'amazonshopping14264@gmail.com' || a.username === 'alamin11gtN');
         }
 
         const loadedState: DatabaseState = {
@@ -787,7 +786,7 @@ class Database {
         author_name: article.author_name || 'Prime Editorial Team',
         author_avatar: article.author_avatar || '',
         author_role: article.author_role || 'Staff Writer',
-        featured_image: article.featured_image || '/src/assets/images/news_world_summit_1793801922828.jpg',
+        featured_image: article.featured_image || '/assets/images/news_world_summit_1793801922828.jpg',
         image_caption_bn: article.image_caption_bn || '',
         image_caption_en: article.image_caption_en || '',
         gallery_images: article.gallery_images || [],

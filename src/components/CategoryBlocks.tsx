@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import { Article, Category } from '../types/news';
 import { useLanguage } from '../context/LanguageContext';
+import { normalizeImageUrl, handleImageError } from '../utils/imageHelper';
 
 interface CategoryBlocksProps {
   categories: Category[];
@@ -59,8 +60,10 @@ export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
               >
                 <div className="relative aspect-video w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                   <img
-                    src={leadStory.featured_image}
+                    src={normalizeImageUrl(leadStory.featured_image)}
                     alt={lang === 'bn' ? leadStory.title_bn : leadStory.title_en}
+                    onError={handleImageError}
+                    loading="lazy"
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -86,8 +89,10 @@ export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
                   >
                     <div className="relative h-18 w-24 shrink-0 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                       <img
-                        src={story.featured_image}
+                        src={normalizeImageUrl(story.featured_image)}
                         alt={lang === 'bn' ? story.title_bn : story.title_en}
+                        onError={handleImageError}
+                        loading="lazy"
                         referrerPolicy="no-referrer"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />

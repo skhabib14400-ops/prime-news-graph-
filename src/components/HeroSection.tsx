@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock, Eye, User, ArrowRight } from 'lucide-react';
 import { Article } from '../types/news';
 import { useLanguage } from '../context/LanguageContext';
+import { normalizeImageUrl, handleImageError } from '../utils/imageHelper';
 
 interface HeroSectionProps {
   leadStory: Article | undefined;
@@ -30,8 +31,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {/* Primary Visual */}
             <div className="relative aspect-video w-full overflow-hidden rounded bg-slate-900 shadow-sm">
               <img
-                src={leadStory.featured_image}
+                src={normalizeImageUrl(leadStory.featured_image)}
                 alt={lang === 'bn' ? leadStory.title_bn : leadStory.title_en}
+                onError={handleImageError}
+                loading="eager"
                 referrerPolicy="no-referrer"
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
@@ -86,8 +89,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {/* Secondary Thumbnail */}
                 <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded bg-slate-900 sm:h-28 sm:w-40">
                   <img
-                    src={article.featured_image}
+                    src={normalizeImageUrl(article.featured_image)}
                     alt={lang === 'bn' ? article.title_bn : article.title_en}
+                    onError={handleImageError}
+                    loading="lazy"
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />

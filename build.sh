@@ -46,6 +46,10 @@ if [ -f "public/sitemap.xml" ]; then
   cp public/sitemap.xml dist/sitemap.xml
 fi
 
+if [ -f "netlify.toml" ]; then
+  cp netlify.toml dist/netlify.toml
+fi
+
 # Ensure uploads directory is present in dist
 mkdir -p dist/uploads
 

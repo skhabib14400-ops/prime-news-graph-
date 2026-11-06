@@ -376,7 +376,7 @@
       "ad_code": "<!-- Adsterra 728x90 Header Leaderboard -->\n<div style=\"width:100%;max-width:728px;height:90px;margin:0 auto;background:linear-gradient(135deg,#0F172A,#1E293B);border:1px solid #334155;border-radius:6px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;color:#F8FAFC;box-sizing:border-box;font-family:sans-serif;\">\n  <div>\n    <div style=\"font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;\">Sponsored Advertisement</div>\n    <div style=\"font-size:16px;font-weight:700;color:#38BDF8;\">Global Cloud Hosting Solutions</div>\n    <div style=\"font-size:12px;color:#CBD5E1;\">Deploy high-speed infrastructure worldwide with 99.99% uptime.</div>\n  </div>\n  <a href=\"https://example.com\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"background:#2563EB;color:#FFF;padding:8px 16px;border-radius:4px;font-size:12px;font-weight:600;text-decoration:none;\">Explore Now &rarr;</a>\n</div>",
       "is_active": true,
       "device_target": "desktop",
-      "impressions": 24504,
+      "impressions": 24505,
       "clicks": 1240
     },
     {
@@ -386,7 +386,7 @@
       "ad_code": "<!-- Adsterra Homepage Billboard -->\n<div style=\"width:100%;padding:16px 24px;background:#F1F5F9;border:1px dashed #CBD5E1;border-radius:8px;display:flex;align-items:center;justify-content:space-between;\">\n  <div>\n    <span style=\"font-size:10px;font-weight:700;color:#64748B;letter-spacing:1px;\">PROMOTED</span>\n    <h4 style=\"margin:2px 0;font-size:15px;color:#0F172A;\">Digital Banking & Seamless International Remittance</h4>\n    <p style=\"margin:0;font-size:12px;color:#475569;\">Zero fees on instant overseas transfers this week only.</p>\n  </div>\n  <a href=\"https://example.com\" target=\"_blank\" style=\"padding:6px 14px;background:#059669;color:#fff;border-radius:4px;font-size:12px;font-weight:bold;text-decoration:none;\">Learn More</a>\n</div>",
       "is_active": true,
       "device_target": "all",
-      "impressions": 18404,
+      "impressions": 18405,
       "clicks": 980
     },
     {
@@ -396,7 +396,7 @@
       "ad_code": "<!-- Adsterra Native Feed Card -->\n<div style=\"background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;padding:16px;display:flex;gap:16px;align-items:center;\">\n  <div style=\"width:80px;height:60px;background:#E0F2FE;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#0284C7;font-weight:bold;font-size:12px;\">TECH SPONSOR</div>\n  <div style=\"flex:1;\">\n    <span style=\"font-size:11px;color:#0284C7;font-weight:bold;\">FEATURED PARTNER</span>\n    <h4 style=\"margin:2px 0 4px;font-size:14px;color:#1E293B;\">Next-Gen Enterprise Cyber Shield Platform</h4>\n    <p style=\"margin:0;font-size:12px;color:#64748B;\">Protect critical databases and web infrastructure from zero-day threats.</p>\n  </div>\n  <a href=\"https://example.com\" target=\"_blank\" style=\"padding:6px 12px;border:1px solid #2563EB;color:#2563EB;border-radius:4px;font-size:11px;font-weight:bold;text-decoration:none;\">Visit Website</a>\n</div>",
       "is_active": true,
       "device_target": "all",
-      "impressions": 12104,
+      "impressions": 12105,
       "clicks": 650
     },
     {
@@ -406,7 +406,7 @@
       "ad_code": "<!-- Adsterra 300x250 Medium Rectangle -->\n<div style=\"width:300px;min-height:250px;margin:0 auto;background:#1E293B;color:#FFF;border-radius:8px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;text-align:center;\">\n  <div style=\"font-size:10px;color:#94A3B8;letter-spacing:1px;text-transform:uppercase;\">Advertisement</div>\n  <div>\n    <div style=\"font-size:18px;font-weight:bold;color:#38BDF8;margin-bottom:6px;\">Master Data Science & AI</div>\n    <div style=\"font-size:12px;color:#CBD5E1;line-height:1.4;\">Enroll in accredited online masterclasses with live mentors.</div>\n  </div>\n  <a href=\"https://example.com\" target=\"_blank\" style=\"background:#2563EB;color:#FFF;padding:10px;border-radius:6px;font-weight:bold;font-size:13px;text-decoration:none;margin-top:12px;\">Get 50% Off &rarr;</a>\n</div>",
       "is_active": true,
       "device_target": "all",
-      "impressions": 31204,
+      "impressions": 31205,
       "clicks": 1890
     },
     {
@@ -446,7 +446,7 @@
       "ad_code": "<!-- Adsterra Footer Banner -->\n<div style=\"width:100%;max-width:728px;margin:0 auto;padding:12px;background:#0F172A;border-radius:6px;text-align:center;color:#94A3B8;font-size:12px;\">\n  <span style=\"text-transform:uppercase;font-size:10px;display:block;margin-bottom:4px;\">Advertisement</span>\n  <span style=\"color:#E2E8F0;\">Looking for professional web development and digital marketing? <a href=\"https://example.com\" target=\"_blank\" style=\"color:#38BDF8;font-weight:bold;\">Contact Our Agency &rarr;</a></span>\n</div>",
       "is_active": true,
       "device_target": "desktop",
-      "impressions": 9804,
+      "impressions": 9805,
       "clicks": 390
     },
     {
@@ -456,7 +456,7 @@
       "ad_code": "<!-- Adsterra Mobile Sticky Banner -->\n<div style=\"width:100%;height:50px;background:#1E293B;color:#FFF;display:flex;align-items:center;justify-content:space-between;padding:0 12px;box-sizing:border-box;font-size:11px;\">\n  <div>\n    <span style=\"color:#38BDF8;font-weight:bold;\">Special Deal:</span>\n    <span style=\"color:#CBD5E1;margin-left:4px;\">Download Top Finance App Today</span>\n  </div>\n  <a href=\"https://example.com\" target=\"_blank\" style=\"background:#2563EB;color:#FFF;padding:4px 10px;border-radius:3px;font-size:10px;font-weight:bold;text-decoration:none;\">Install</a>\n</div>",
       "is_active": true,
       "device_target": "mobile",
-      "impressions": 28904,
+      "impressions": 28905,
       "clicks": 1640
     },
     {
@@ -639,8 +639,8 @@
   "admin_users": [
     {
       "id": "adm-owner-1",
-      "username": "alamin11gtN",
-      "email": "alamin11gtN@primenewsgraph.com",
+      "username": "amazonshopping14264@gmail.com",
+      "email": "amazonshopping14264@gmail.com",
       "password_hash": "af1f693274a83e28b6b6133c763ee276771fd0ae6cdc91bd99f86539cf461d37d49274ac72b1cb44f9fa890d79d61cc3daf683554c2d360bb4b9f5662cf10089",
       "salt": "df25215a032061b9f21413d5ef5924be",
       "role": "super_admin",

@@ -39,7 +39,8 @@ import {
   TrendingUp,
   BarChart2,
   CheckCircle2,
-  HelpCircle
+  HelpCircle,
+  Camera
 } from 'lucide-react';
 import {
   Article,
@@ -55,6 +56,7 @@ import {
   DatabaseState
 } from '../types/news';
 import { api } from '../services/api';
+import { normalizeImageUrl, handleImageError, PRESET_NEWS_IMAGES, DEFAULT_FALLBACK_IMAGE } from '../utils/imageHelper';
 
 interface AdminDashboardProps {
   onBackToSite: () => void;
@@ -62,14 +64,10 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, onRefreshData }) => {
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return Boolean(localStorage.getItem('png_admin_token'));
-  });
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
-    const saved = localStorage.getItem('png_admin_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // Authentication State - Defaults to false, requiring active validated session
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isVerifyingSession, setIsVerifyingSession] = useState<boolean>(true);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
   // Multi-Step Secure Authentication States
   const [loginStep, setLoginStep] = useState<'credentials' | '2fa' | 'recovery'>('credentials');
@@ -85,7 +83,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Emergency Password Reset State
-  const [recUsername, setRecUsername] = useState('alamin11gtN');
+  const [recUsername, setRecUsername] = useState('amazonshopping14264@gmail.com');
   const [recCode, setRecCode] = useState('');
   const [recNewPassword, setRecNewPassword] = useState('');
   const [recConfirmPassword, setRecConfirmPassword] = useState('');
@@ -205,18 +203,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
     }
   };
 
-  // Verify Active Session on Mount
+  // Verify Active Session on Mount - strictly require email & password authentication
   useEffect(() => {
-    if (isAuthenticated) {
-      api.verifySession().then(res => {
-        if (!res.valid) {
-          handleLogout();
-        } else {
-          loadAllData();
-        }
-      });
+    const activeSession = sessionStorage.getItem('png_active_admin_session');
+    const token = localStorage.getItem('png_admin_token');
+    
+    // If not actively authenticated in this session, demand credentials
+    if (!activeSession || !token) {
+      setIsAuthenticated(false);
+      setIsVerifyingSession(false);
+      fetchCaptcha();
+      return;
     }
-  }, [isAuthenticated]);
+
+    api.verifySession().then(res => {
+      if (res && res.valid && res.user) {
+        setIsAuthenticated(true);
+        setCurrentUser(res.user);
+        loadAllData();
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        sessionStorage.removeItem('png_active_admin_session');
+        localStorage.removeItem('png_admin_token');
+        localStorage.removeItem('png_admin_user');
+        localStorage.removeItem('png_admin_expires');
+        fetchCaptcha();
+      }
+      setIsVerifyingSession(false);
+    }).catch(() => {
+      setIsAuthenticated(false);
+      setIsVerifyingSession(false);
+      fetchCaptcha();
+    });
+  }, []);
 
   // Step 1: Submit Credentials + Anti-Bot CAPTCHA
   const handleStep1Login = async (e: React.FormEvent) => {
@@ -405,6 +425,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
     }
   };
 
+  // Direct device / mobile photo upload handler for news articles
+  const handleArticlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const maxDim = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.85);
+            setEditingArticle(prev => ({ ...prev!, featured_image: compressed }));
+            showToast('ছবি সফলভাবে যুক্ত হয়েছে! (Photo attached)');
+          }
+        };
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      alert('ছবি প্রসেস করতে ব্যর্থ হয়েছে। অন্য ছবি নির্বাচন করুন।');
+    }
+  };
+
   // --- Article Actions ---
   const handleCreateNewArticle = () => {
     setEditingArticle({
@@ -420,7 +480,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
       category_name_en: categories[0]?.name_en || 'National',
       author_id: authors[0]?.id || 'auth-1',
       author_name: authors[0]?.name || 'Editorial Team',
-      featured_image: '/src/assets/images/news_world_summit_1793801922828.jpg',
+      featured_image: '/assets/images/news_world_summit_1793801922828.jpg',
       image_caption_bn: '',
       image_caption_en: '',
       status: 'published',
@@ -444,8 +504,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
       const selectedCat = categories.find(c => c.id === editingArticle.category_id || c.slug === editingArticle.category_slug);
       const selectedAuth = authors.find(a => a.id === editingArticle.author_id);
 
+      let photo = (editingArticle.featured_image || '').trim();
+      if (!photo || photo.includes('/src/')) {
+        photo = normalizeImageUrl(photo, editingArticle.title_bn, editingArticle.category_slug);
+      }
+
       const toSave: Partial<Article> = {
         ...editingArticle,
+        featured_image: photo,
         category_name_bn: selectedCat ? selectedCat.name_bn : editingArticle.category_name_bn,
         category_name_en: selectedCat ? selectedCat.name_en : editingArticle.category_name_en,
         category_slug: selectedCat ? selectedCat.slug : editingArticle.category_slug,
@@ -671,6 +737,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   // Total Views Calculation
   const totalViews = articles.reduce((acc, a) => acc + (a.views_count || 0), 0);
 
+  // If Session Verification is pending, show security verification loader
+  if (isVerifyingSession) {
+    return (
+      <div className="min-h-screen bg-[#070D18] flex flex-col items-center justify-center p-4 text-white">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="h-10 w-10 border-4 border-[#246BFD] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+            নিরাপদ এডমিন সেশন যাচাই করা হচ্ছে...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // If Not Authenticated, Show Maximum Security Login Screen
   if (!isAuthenticated) {
     return (
@@ -712,7 +792,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                   type="text"
                   value={loginUsername}
                   onChange={e => setLoginUsername(e.target.value)}
-                  placeholder="Enter administrator username"
+                  placeholder="amazonshopping14264@gmail.com"
                   required
                   autoComplete="username"
                   className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#246BFD] focus:ring-1 focus:ring-[#246BFD]"
@@ -1162,8 +1242,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                       <div key={art.id} className="py-3 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={art.featured_image}
+                            src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
                             alt=""
+                            onError={handleImageError}
                             className="h-10 w-14 object-cover rounded bg-slate-100 shrink-0"
                           />
                           <div>
@@ -1297,7 +1378,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                         .map(art => (
                           <tr key={art.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-3 px-4 flex items-center gap-3">
-                              <img src={art.featured_image} alt="" className="h-10 w-14 object-cover rounded bg-slate-100 shrink-0" />
+                              <img
+                                src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
+                                alt=""
+                                onError={handleImageError}
+                                className="h-10 w-14 object-cover rounded bg-slate-100 shrink-0"
+                              />
                               <div>
                                 <div className="font-bold text-slate-900 line-clamp-1 max-w-md">{art.title_bn}</div>
                                 <div className="text-[10px] text-slate-400 font-mono">{art.slug}</div>
@@ -1497,34 +1583,112 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                   </div>
                 </div>
 
-                {/* Featured Image & Video URL */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                      Featured Image URL or Path *
+                {/* 1. Featured Image Section with Mobile Device Upload & Presets */}
+                <div className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-800">
+                        খবরের প্রধান ছবি (Featured News Image) *
+                      </label>
+                      <p className="text-[11px] text-slate-500">
+                        মোবাইল গ্যালারি থেকে সরাসরি ছবি আপলোড করুন অথবা রেডিমেড ছবি নির্বাচন করুন
+                      </p>
+                    </div>
+
+                    {/* Direct Upload Button */}
+                    <label className="inline-flex items-center gap-2 bg-[#246BFD] hover:bg-blue-600 text-white px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs">
+                      <Camera className="h-4 w-4" />
+                      <span>গ্যালারি / ডিভাইস থেকে ছবি দিন</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleArticlePhotoUpload}
+                        className="hidden"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={editingArticle?.featured_image || ''}
-                      onChange={e => setEditingArticle(prev => ({ ...prev!, featured_image: e.target.value }))}
-                      placeholder="/src/assets/images/... or https://..."
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#246BFD]"
-                    />
                   </div>
 
+                  {/* Preset Photo Quick Picker */}
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                      YouTube Video URL (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={editingArticle?.video_url || ''}
-                      onChange={e => setEditingArticle(prev => ({ ...prev!, video_url: e.target.value }))}
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#246BFD]"
-                    />
+                    <span className="block text-[11px] font-semibold text-slate-600 mb-1.5">
+                      অথবা ১-ক্লিকে রেডিমেড নিউজ ছবি নির্বাচন করুন:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {PRESET_NEWS_IMAGES.map(preset => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            setEditingArticle(prev => ({ ...prev!, featured_image: preset.url }));
+                            showToast(`"${preset.label}" ছবি নির্বাচন করা হয়েছে`);
+                          }}
+                          className={`group relative rounded-lg border overflow-hidden p-1.5 text-left transition-all cursor-pointer ${
+                            editingArticle?.featured_image === preset.url
+                              ? 'border-[#246BFD] bg-blue-50 ring-2 ring-[#246BFD]/30'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <img
+                            src={preset.url}
+                            alt=""
+                            className="h-12 w-full object-cover rounded"
+                          />
+                          <span className="block text-[10px] font-bold text-slate-700 mt-1 truncate">
+                            {preset.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Manual URL / Path Input & Live Preview */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2 border-t border-blue-100">
+                    <div className="sm:col-span-8">
+                      <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                        ছবির পাথ বা অনলাইন লিঙ্ক (Image URL / Path)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingArticle?.featured_image || ''}
+                        onChange={e => setEditingArticle(prev => ({ ...prev!, featured_image: e.target.value }))}
+                        placeholder="/assets/images/... or https://..."
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#246BFD]"
+                      />
+                    </div>
+
+                    {/* Live Preview Box */}
+                    <div className="sm:col-span-4">
+                      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                        ছবির প্রিভিউ (Live Preview)
+                      </span>
+                      <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-slate-300 bg-slate-900">
+                        <img
+                          src={normalizeImageUrl(editingArticle?.featured_image, editingArticle?.title_bn, editingArticle?.category_slug)}
+                          alt="Preview"
+                          onError={handleImageError}
+                          className="h-full w-full object-cover"
+                        />
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-emerald-300">
+                          ✓ ছবি রেডি
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Video URL */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    YouTube Video URL (ঐচ্ছিক / Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingArticle?.video_url || ''}
+                    onChange={e => setEditingArticle(prev => ({ ...prev!, video_url: e.target.value }))}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#246BFD]"
+                  />
                 </div>
 
                 {/* Article Full Rich HTML Content (Bengali) */}
@@ -1807,7 +1971,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                     {articles.filter(a => a.is_featured).map(art => (
                       <div key={art.id} className="py-2.5 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img src={art.featured_image} alt="" className="h-8 w-12 rounded object-cover" />
+                          <img
+                            src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
+                            alt=""
+                            onError={handleImageError}
+                            className="h-8 w-12 rounded object-cover"
+                          />
                           <span className="text-xs font-semibold text-slate-800 line-clamp-1 max-w-xs">{art.title_bn}</span>
                         </div>
                         <button
@@ -1830,7 +1999,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                     {articles.filter(a => a.is_editors_choice).map(art => (
                       <div key={art.id} className="py-2.5 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img src={art.featured_image} alt="" className="h-8 w-12 rounded object-cover" />
+                          <img
+                            src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
+                            alt=""
+                            onError={handleImageError}
+                            className="h-8 w-12 rounded object-cover"
+                          />
                           <span className="text-xs font-semibold text-slate-800 line-clamp-1 max-w-xs">{art.title_bn}</span>
                         </div>
                         <span className="text-[10px] text-slate-400 tabular-nums">{art.views_count.toLocaleString()} views</span>
@@ -1976,10 +2150,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {/* Pre-installed generated hero images */}
                 {[
-                  { name: 'World Summit Accord', url: '/src/assets/images/news_world_summit_1793801922828.jpg' },
-                  { name: '2nm AI Semiconductor', url: '/src/assets/images/news_tech_ai_chip_1793801922448.jpg' },
-                  { name: 'Dhaka Metro Rail Network', url: '/src/assets/images/news_dhaka_metro_1793801923998.jpg' },
-                  { name: 'Cricket World Cup Final', url: '/src/assets/images/news_cricket_stadium_1793801922344.jpg' },
+                  { name: 'World Summit Accord', url: '/assets/images/news_world_summit_1793801922828.jpg' },
+                  { name: '2nm AI Semiconductor', url: '/assets/images/news_tech_ai_chip_1793801922448.jpg' },
+                  { name: 'Dhaka Metro Rail Network', url: '/assets/images/news_dhaka_metro_1793801923998.jpg' },
+                  { name: 'Cricket World Cup Final', url: '/assets/images/news_cricket_stadium_1793801922344.jpg' },
                 ].map((item, idx) => (
                   <div key={idx} className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs group">
                     <div className="aspect-square bg-slate-100 overflow-hidden relative">
@@ -2557,7 +2731,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                 <div>
                   <p className="font-bold">Strict Ownership Policy Enforced</p>
                   <p className="text-blue-700 mt-0.5 leading-relaxed">
-                    Only the designated owner account (<code className="font-mono font-bold">alamin11gtN</code>) is authorized to control the PRIME NEWS GRAPH platform, publish or delete articles, configure advertisements, and modify system settings. All visitor registration attempts are blocked at the database level.
+                    Only the designated owner account (<code className="font-mono font-bold">amazonshopping14264@gmail.com</code>) is authorized to control the PRIME NEWS GRAPH platform, publish or delete articles, configure advertisements, and modify system settings. All visitor registration attempts are blocked at the database level.
                   </p>
                 </div>
               </div>

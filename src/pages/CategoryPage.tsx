@@ -4,6 +4,7 @@ import { Article, Category, AdSlot } from '../types/news';
 import { useLanguage } from '../context/LanguageContext';
 import { AdPlacement } from '../components/AdPlacement';
 import { PopularNews } from '../components/PopularNews';
+import { normalizeImageUrl, handleImageError } from '../utils/imageHelper';
 
 interface CategoryPageProps {
   category: Category;
@@ -91,8 +92,10 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
                   <div>
                     <div className="aspect-video w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800 mb-3">
                       <img
-                        src={article.featured_image}
+                        src={normalizeImageUrl(article.featured_image)}
                         alt={lang === 'bn' ? article.title_bn : article.title_en}
+                        onError={handleImageError}
+                        loading="lazy"
                         referrerPolicy="no-referrer"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />

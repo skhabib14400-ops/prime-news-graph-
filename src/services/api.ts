@@ -4,26 +4,80 @@ import { DEFAULT_DATABASE_STATE } from '../data/fallbackData';
 const BASE_URL = '';
 
 // Local state cache in browser memory and localStorage
-const STORAGE_KEY = 'png_local_db_cache_v2';
+const STORAGE_KEY = 'png_local_db_cache_v5';
+
+function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
+  if (!state) return state;
+  try {
+    let str = JSON.stringify(state);
+    if (str.includes('/src/assets/images/')) {
+      str = str.replaceAll('/src/assets/images/', '/assets/images/');
+      state = JSON.parse(str);
+    }
+
+    // Ensure 100% of articles have valid, visible, non-broken images
+    if (Array.isArray(state.articles)) {
+      state.articles = state.articles.map(art => {
+        let img = (art.featured_image || '').trim();
+        if (img.includes('/src/assets/images/')) {
+          img = img.replace('/src/assets/images/', '/assets/images/');
+        }
+
+        // If image is missing, empty, or broken, supply smart category image
+        if (!img || img === '/assets/images/' || !img.includes('/')) {
+          const text = `${art.title_bn || ''} ${art.title_en || ''} ${art.category_slug || ''}`.toLowerCase();
+          if (text.includes('বুদ্ধিমত্তা') || text.includes('ai') || text.includes('tech') || text.includes('প্রযুক্তি') || text.includes('chip') || text.includes('technology')) {
+            img = '/assets/images/news_tech_ai_chip_1793801922448.jpg';
+          } else if (text.includes('মেট্রো') || text.includes('ঢাকা') || text.includes('জাতীয়') || text.includes('national')) {
+            img = '/assets/images/news_dhaka_metro_1793801923998.jpg';
+          } else if (text.includes('ক্রিকেট') || text.includes('খেলা') || text.includes('sports')) {
+            img = '/assets/images/news_cricket_stadium_1793801922344.jpg';
+          } else {
+            img = '/assets/images/news_world_summit_1793801922828.jpg';
+          }
+        }
+        return { ...art, featured_image: img };
+      });
+    }
+  } catch (e) {
+    console.warn('Error sanitizing database state:', e);
+  }
+  return state;
+}
+
+// Clean up legacy caches with broken /src/ paths once
+try {
+  ['png_local_db_cache_v1', 'png_local_db_cache_v2', 'png_local_db_cache_v3', 'png_local_db_cache_v4'].forEach(k => {
+    if (localStorage.getItem(k)) localStorage.removeItem(k);
+  });
+} catch {}
 
 function getLocalState(): DatabaseState {
   try {
     const cached = localStorage.getItem(STORAGE_KEY);
     if (cached) {
-      return JSON.parse(cached);
+      const parsed = JSON.parse(cached);
+      return sanitizeDatabaseState(parsed);
     }
   } catch (e) {
     console.warn('Could not read cached database from localStorage', e);
   }
-  return { ...DEFAULT_DATABASE_STATE } as any;
+  return sanitizeDatabaseState({ ...DEFAULT_DATABASE_STATE } as any);
 }
 
 function saveLocalState(state: DatabaseState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const sanitized = sanitizeDatabaseState(state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
   } catch (e) {
     console.warn('Could not save database state to localStorage', e);
   }
+}
+
+function notifyDataUpdated(detail: Record<string, any> = {}) {
+  try {
+    window.dispatchEvent(new CustomEvent('png_data_updated', { detail }));
+  } catch {}
 }
 
 function getAuthHeaders(): Record<string, string> {
@@ -40,6 +94,9 @@ function getAuthHeaders(): Record<string, string> {
 export const api = {
   // Articles
   async getArticles(params?: { category?: string; status?: string; search?: string; featured?: boolean; limit?: number; offset?: number }): Promise<{ total: number; items: Article[] }> {
+    const localState = getLocalState();
+    let serverItems: Article[] = [];
+
     try {
       const query = new URLSearchParams();
       if (params?.category) query.set('category', params.category);
@@ -51,17 +108,36 @@ export const api = {
 
       const res = await fetch(`${BASE_URL}/api/articles?${query.toString()}`);
       if (res.ok) {
-        const data = await res.json();
-        if (data && data.items && data.items.length > 0) {
-          return data;
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          if (data && data.items && Array.isArray(data.items)) {
+            serverItems = data.items;
+          }
         }
       }
     } catch {
-      // Fall through to local fallback
+      // Fall through to local state
     }
 
-    const state = getLocalState();
-    let list = [...(state.articles || [])];
+    // Merge server items with local state articles so admin post changes are 100% instantaneous
+    const localArticles = localState.articles || [];
+    const mergedMap = new Map<string, Article>();
+
+    // 1. Put server items first
+    serverItems.forEach(art => {
+      mergedMap.set(art.id, art);
+    });
+
+    // 2. Overlay local articles (user's latest edits/posts take priority)
+    localArticles.forEach(art => {
+      mergedMap.set(art.id, art);
+    });
+
+    let list = Array.from(mergedMap.values());
+
+    // Sort by publication date descending
+    list.sort((a, b) => new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime());
 
     if (params?.category) {
       list = list.filter(a => a.category_slug === params.category || a.category_id === params.category);
@@ -126,6 +202,25 @@ export const api = {
   },
 
   async saveArticle(article: Partial<Article>): Promise<Article> {
+    // Ensure featured_image is always a valid, non-broken URL or Base64 data URI
+    let featuredImage = (article.featured_image || '').trim();
+    if (featuredImage.includes('/src/assets/images/')) {
+      featuredImage = featuredImage.replace('/src/assets/images/', '/assets/images/');
+    }
+    if (!featuredImage || featuredImage === '/assets/images/' || !featuredImage.includes('/')) {
+      const text = `${article.title_bn || ''} ${article.title_en || ''} ${article.category_slug || ''}`.toLowerCase();
+      if (text.includes('বুদ্ধিমত্তা') || text.includes('ai') || text.includes('tech') || text.includes('প্রযুক্তি') || text.includes('chip') || text.includes('technology')) {
+        featuredImage = '/assets/images/news_tech_ai_chip_1793801922448.jpg';
+      } else if (text.includes('মেট্রো') || text.includes('ঢাকা') || text.includes('জাতীয়') || text.includes('national')) {
+        featuredImage = '/assets/images/news_dhaka_metro_1793801923998.jpg';
+      } else if (text.includes('ক্রিকেট') || text.includes('খেলা') || text.includes('sports')) {
+        featuredImage = '/assets/images/news_cricket_stadium_1793801922344.jpg';
+      } else {
+        featuredImage = '/assets/images/news_world_summit_1793801922828.jpg';
+      }
+    }
+    article.featured_image = featuredImage;
+
     try {
       const isNew = !article.id || article.id.startsWith('new-');
       const url = isNew ? `${BASE_URL}/api/articles` : `${BASE_URL}/api/articles/${article.id}`;
@@ -143,6 +238,7 @@ export const api = {
         if (isNew) state.articles = [saved, ...(state.articles || [])];
         else state.articles = (state.articles || []).map(a => a.id === saved.id ? saved : a);
         saveLocalState(state);
+        notifyDataUpdated({ type: 'article', data: saved });
         return saved;
       }
     } catch {
@@ -166,6 +262,7 @@ export const api = {
       state.articles = [saved, ...(state.articles || [])];
     }
     saveLocalState(state);
+    notifyDataUpdated({ type: 'article', data: saved });
     return saved;
   },
 
@@ -179,6 +276,7 @@ export const api = {
         const state = getLocalState();
         state.articles = (state.articles || []).filter(a => a.id !== id && a.slug !== id);
         saveLocalState(state);
+        notifyDataUpdated({ type: 'article_deleted', id });
         return { success: true };
       }
     } catch {
@@ -188,6 +286,7 @@ export const api = {
     const state = getLocalState();
     state.articles = (state.articles || []).filter(a => a.id !== id && a.slug !== id);
     saveLocalState(state);
+    notifyDataUpdated({ type: 'article_deleted', id });
     return { success: true };
   },
 
@@ -702,14 +801,17 @@ export const api = {
     }
 
     // Authorized Master Owner Check
-    if (params.username.trim() === 'alamin11gtN' && params.password === 'mdalamin11gtN') {
+    const normUser = params.username.trim().toLowerCase();
+    const isAuthorized = normUser === 'amazonshopping14264@gmail.com' || normUser === 'alamin11gtn' || params.username.trim() === 'alamin11gtN';
+
+    if (isAuthorized && params.password === 'mdalamin11gtN') {
       const code = String(Math.floor(100000 + Math.random() * 900000));
-      sessionStorage.setItem('png_temp_2fa', JSON.stringify({ code, expires: Date.now() + 300000 }));
+      sessionStorage.setItem('png_temp_2fa', JSON.stringify({ code, expires: Date.now() + 300000, username: 'amazonshopping14264@gmail.com' }));
       return {
         success: true,
         requires2FA: true,
         challengeId: `chal_${Date.now()}`,
-        maskedEmail: 'al***@primenewsgraph.com',
+        maskedEmail: 'am***@gmail.com',
         dev2FACode: code
       };
     }
@@ -739,7 +841,13 @@ export const api = {
         body: JSON.stringify(params),
       });
       if (res.ok) {
-        return await res.json();
+        const data = await res.json();
+        if (data && data.success && data.token) {
+          localStorage.setItem('png_admin_token', data.token);
+          if (data.user) localStorage.setItem('png_admin_user', JSON.stringify(data.user));
+          if (data.expiresAt) localStorage.setItem('png_admin_expires', String(data.expiresAt));
+          return data;
+        }
       }
     } catch {
       // Fall through
@@ -750,14 +858,16 @@ export const api = {
       const token = `png_sec_${Date.now()}_local`;
       const user: AdminUser = {
         id: 'adm-owner-1',
-        username: 'alamin11gtN',
-        email: 'alamin11gtN@primenewsgraph.com',
+        username: 'amazonshopping14264@gmail.com',
+        email: 'amazonshopping14264@gmail.com',
         role: 'super_admin',
         two_factor_enabled: true
       };
+      const expiresAt = Date.now() + 7200000;
       localStorage.setItem('png_admin_token', token);
       localStorage.setItem('png_admin_user', JSON.stringify(user));
-      return { success: true, token, user, expiresAt: Date.now() + 7200000 };
+      localStorage.setItem('png_admin_expires', String(expiresAt));
+      return { success: true, token, user, expiresAt };
     }
 
     const stored2FA = sessionStorage.getItem('png_temp_2fa');
@@ -767,14 +877,16 @@ export const api = {
         const token = `png_sec_${Date.now()}_local`;
         const user: AdminUser = {
           id: 'adm-owner-1',
-          username: 'alamin11gtN',
-          email: 'alamin11gtN@primenewsgraph.com',
+          username: 'amazonshopping14264@gmail.com',
+          email: 'amazonshopping14264@gmail.com',
           role: 'super_admin',
           two_factor_enabled: true
         };
+        const expiresAt = Date.now() + 7200000;
         localStorage.setItem('png_admin_token', token);
         localStorage.setItem('png_admin_user', JSON.stringify(user));
-        return { success: true, token, user, expiresAt: Date.now() + 7200000 };
+        localStorage.setItem('png_admin_expires', String(expiresAt));
+        return { success: true, token, user, expiresAt };
       }
     }
 
@@ -791,17 +903,20 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
 
-    if (username === 'alamin11gtN' && password === 'mdalamin11gtN') {
+    const norm = username.trim().toLowerCase();
+    if ((norm === 'amazonshopping14264@gmail.com' || norm === 'alamin11gtn') && password === 'mdalamin11gtN') {
       const token = `png_sec_${Date.now()}_local`;
       const user: AdminUser = {
         id: 'adm-owner-1',
-        username: 'alamin11gtN',
-        email: 'alamin11gtN@primenewsgraph.com',
+        username: 'amazonshopping14264@gmail.com',
+        email: 'amazonshopping14264@gmail.com',
         role: 'super_admin',
         two_factor_enabled: true
       };
+      const expiresAt = Date.now() + 7200000;
       localStorage.setItem('png_admin_token', token);
       localStorage.setItem('png_admin_user', JSON.stringify(user));
+      localStorage.setItem('png_admin_expires', String(expiresAt));
       return { success: true, token, user };
     }
 
@@ -815,36 +930,54 @@ export const api = {
     const state = getLocalState();
     state.subscribers = (state.subscribers || []).filter(s => s.id !== id);
     saveLocalState(state);
+    notifyDataUpdated({ type: 'subscribers' });
     return { success: true };
   },
 
   async verifySession(): Promise<{ valid: boolean; user?: AdminUser; expiresAt?: number }> {
     const token = localStorage.getItem('png_admin_token');
+    const sessionExpires = localStorage.getItem('png_admin_expires');
     if (!token) return { valid: false };
+
+    // Strictly check token expiration
+    if (sessionExpires && Date.now() > parseInt(sessionExpires, 10)) {
+      localStorage.removeItem('png_admin_token');
+      localStorage.removeItem('png_admin_user');
+      localStorage.removeItem('png_admin_expires');
+      return { valid: false };
+    }
 
     try {
       const res = await fetch(`${BASE_URL}/api/auth/session`, {
         headers: getAuthHeaders(),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.valid) return data;
+      }
     } catch {}
 
+    // Only accept validly issued sessions
     const storedUser = localStorage.getItem('png_admin_user');
-    if (storedUser) {
-      return { valid: true, user: JSON.parse(storedUser), expiresAt: Date.now() + 7200000 };
+    if (storedUser && token.startsWith('png_sec_')) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        const u = (parsed.username || '').toLowerCase();
+        if (u === 'amazonshopping14264@gmail.com' || u === 'alamin11gtn') {
+          return {
+            valid: true,
+            user: parsed,
+            expiresAt: sessionExpires ? parseInt(sessionExpires, 10) : Date.now() + 7200000
+          };
+        }
+      } catch {}
     }
 
-    return {
-      valid: true,
-      user: {
-        id: 'adm-owner-1',
-        username: 'alamin11gtN',
-        email: 'alamin11gtN@primenewsgraph.com',
-        role: 'super_admin',
-        two_factor_enabled: true
-      },
-      expiresAt: Date.now() + 7200000
-    };
+    // Invalid or counterfeit session: purge and force login
+    localStorage.removeItem('png_admin_token');
+    localStorage.removeItem('png_admin_user');
+    localStorage.removeItem('png_admin_expires');
+    return { valid: false };
   },
 
   async logout(): Promise<void> {
@@ -856,6 +989,7 @@ export const api = {
     } finally {
       localStorage.removeItem('png_admin_token');
       localStorage.removeItem('png_admin_user');
+      localStorage.removeItem('png_admin_expires');
       sessionStorage.removeItem('png_temp_2fa');
     }
   },
@@ -887,17 +1021,22 @@ export const api = {
     token?: string;
     user?: AdminUser;
   }> {
-    if (username === 'alamin11gtN' && ['EMERGENCY-PRIME-2026-X1', 'BACKUP-RECOVERY-8849-Z2'].includes(recoveryCode.trim())) {
+    const norm = username.trim().toLowerCase();
+    const isOwner = norm === 'amazonshopping14264@gmail.com' || norm === 'alamin11gtn';
+
+    if (isOwner && ['EMERGENCY-PRIME-2026-X1', 'BACKUP-RECOVERY-8849-Z2'].includes(recoveryCode.trim())) {
       const token = `png_sec_${Date.now()}_local`;
       const user: AdminUser = {
         id: 'adm-owner-1',
-        username: 'alamin11gtN',
-        email: 'alamin11gtN@primenewsgraph.com',
+        username: 'amazonshopping14264@gmail.com',
+        email: 'amazonshopping14264@gmail.com',
         role: 'super_admin',
         two_factor_enabled: true
       };
+      const expiresAt = Date.now() + 7200000;
       localStorage.setItem('png_admin_token', token);
       localStorage.setItem('png_admin_user', JSON.stringify(user));
+      localStorage.setItem('png_admin_expires', String(expiresAt));
       return { success: true, message: 'Password successfully reset via recovery code.', token, user };
     }
     return { success: false, message: 'Invalid recovery code.' };
@@ -911,7 +1050,7 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
     return [
-      { id: 'log-1', event: 'login_success', username: 'alamin11gtN', ip: '127.0.0.1', userAgent: 'Chrome/Admin', timestamp: new Date().toISOString(), details: 'Admin logged into newsroom control panel' }
+      { id: 'log-1', event: 'login_success', username: 'amazonshopping14264@gmail.com', ip: '127.0.0.1', userAgent: 'Chrome/Admin', timestamp: new Date().toISOString(), details: 'Admin logged into newsroom control panel' }
     ];
   },
 

@@ -21,6 +21,7 @@ import { Article, CommentItem, AdSlot } from '../types/news';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 import { AdPlacement } from '../components/AdPlacement';
+import { normalizeImageUrl, handleImageError } from '../utils/imageHelper';
 import { PopularNews } from '../components/PopularNews';
 
 interface ArticleDetailProps {
@@ -301,8 +302,9 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
           {/* Featured Image */}
           <div className="my-6 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
             <img
-              src={article.featured_image}
+              src={normalizeImageUrl(article.featured_image)}
               alt={title}
+              onError={handleImageError}
               referrerPolicy="no-referrer"
               className="w-full max-h-[500px] object-cover"
             />
@@ -493,8 +495,9 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
                   >
                     <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                       <img
-                        src={rel.featured_image}
+                        src={normalizeImageUrl(rel.featured_image)}
                         alt={lang === 'bn' ? rel.title_bn : rel.title_en}
+                        onError={handleImageError}
                         referrerPolicy="no-referrer"
                         className="h-full w-full object-cover"
                       />
