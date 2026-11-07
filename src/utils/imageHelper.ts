@@ -6,6 +6,8 @@ export const DEFAULT_FALLBACK_IMAGE = '/assets/images/news_world_summit_17938019
 export const EMBEDDED_FALLBACK_SVG =
   "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='450' viewBox='0 0 800 450'%3E%3Crect width='800' height='450' fill='%23101d35'/%3E%3Crect x='30' y='30' width='740' height='390' rx='12' fill='%23172554' stroke='%232563eb' stroke-width='2'/%3E%3Cpath d='M340 180h120v90H340z' fill='%233b82f6' opacity='0.3'/%3E%3Ccircle cx='380' cy='210' r='18' fill='%2360a5fa'/%3E%3Cpath d='M350 260l25-30 20 20 25-35 30 45H350z' fill='%2393c5fd'/%3E%3Ctext x='400' y='325' font-family='sans-serif' font-size='24' font-weight='bold' fill='%23ffffff' text-anchor='middle'%3EPRIME NEWS GRAPH%3C/text%3E%3Ctext x='400' y='355' font-family='sans-serif' font-size='14' fill='%2394a3b8' text-anchor='middle'%3EGlobal Digital Journalism Desk%3C/text%3E%3C/svg%3E";
 
+export const CDN_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80';
+
 export const PRESET_NEWS_IMAGES = [
   {
     id: 'ai_tech',
@@ -34,11 +36,11 @@ export const PRESET_NEWS_IMAGES = [
  * Automatically handles data: URIs, fixes legacy /src/ paths, and maps category defaults.
  */
 export function normalizeImageUrl(url?: string | null, titleHint?: string, categoryHint?: string): string {
-  if (!url || typeof url !== 'string' || !url.trim()) {
+  if (!url || typeof url !== 'string' || !url.trim() || url === 'undefined' || url === 'null') {
     return getSmartFallbackImage(titleHint, categoryHint);
   }
 
-  const clean = url.trim();
+  let clean = url.trim();
 
   // If already base64 data URI, external URL, or absolute path, sanitize
   if (clean.startsWith('data:image/')) {
@@ -47,7 +49,10 @@ export function normalizeImageUrl(url?: string | null, titleHint?: string, categ
 
   // Fix legacy /src/assets/images paths that might exist in browser cache
   if (clean.includes('/src/assets/images/')) {
-    return clean.replace('/src/assets/images/', '/assets/images/');
+    clean = clean.replace('/src/assets/images/', '/assets/images/');
+  }
+  if (clean.startsWith('src/assets/images/')) {
+    clean = clean.replace('src/assets/images/', '/assets/images/');
   }
 
   if (clean.startsWith('http://') || clean.startsWith('https://')) {
@@ -76,16 +81,21 @@ export function getSmartFallbackImage(titleHint?: string, categoryHint?: string)
 }
 
 /**
- * Image error handler that replaces a broken image with a guaranteed local fallback or embedded SVG.
+ * Image error handler that replaces a broken image with a guaranteed local fallback, CDN fallback, or embedded SVG.
  */
 export function handleImageError(
   e: React.SyntheticEvent<HTMLImageElement, Event>,
-  fallback: string = DEFAULT_FALLBACK_IMAGE
+  fallback?: string
 ) {
   const target = e.currentTarget;
   if (!target.dataset.triedLocalFallback) {
     target.dataset.triedLocalFallback = 'true';
-    target.src = fallback;
+    target.src = fallback || DEFAULT_FALLBACK_IMAGE;
+    return;
+  }
+  if (!target.dataset.triedCdnFallback) {
+    target.dataset.triedCdnFallback = 'true';
+    target.src = CDN_FALLBACK_IMAGE;
     return;
   }
   if (!target.dataset.triedSvgFallback) {

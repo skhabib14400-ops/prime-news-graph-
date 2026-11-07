@@ -97,18 +97,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   // Active Tab: 1 to 21
   const [activeTab, setActiveTab] = useState<string>('overview');
 
-  // Main Data States
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [breakingNews, setBreakingNews] = useState<BreakingNewsItem[]>([]);
-  const [ads, setAds] = useState<AdSlot[]>([]);
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [authors, setAuthors] = useState<Author[]>([]);
-  const [comments, setComments] = useState<CommentItem[]>([]);
-  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
-  const [settings, setSettings] = useState<WebsiteSettings | null>(null);
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
-  const [mediaFiles, setMediaFiles] = useState<any[]>([]);
+  // Main Data States - pre-populated instantly from local database state
+  const [articles, setArticles] = useState<Article[]>(() => api.getLocalDatabaseState().articles || []);
+  const [categories, setCategories] = useState<Category[]>(() => api.getLocalDatabaseState().categories || []);
+  const [breakingNews, setBreakingNews] = useState<BreakingNewsItem[]>(() => api.getLocalDatabaseState().breaking_news || []);
+  const [ads, setAds] = useState<AdSlot[]>(() => api.getLocalDatabaseState().ads || []);
+  const [videos, setVideos] = useState<VideoItem[]>(() => api.getLocalDatabaseState().videos || []);
+  const [authors, setAuthors] = useState<Author[]>(() => api.getLocalDatabaseState().authors || []);
+  const [comments, setComments] = useState<CommentItem[]>(() => api.getLocalDatabaseState().comments || []);
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>(() => api.getLocalDatabaseState().subscribers || []);
+  const [settings, setSettings] = useState<WebsiteSettings | null>(() => api.getLocalDatabaseState().settings || null);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>(() => (api.getLocalDatabaseState().admin_users as any) || []);
+  const [mediaFiles, setMediaFiles] = useState<any[]>(() => [
+    { id: '1', name: 'news_world_summit_1793801922828.jpg', url: '/assets/images/news_world_summit_1793801922828.jpg', size: 245000, created_at: new Date().toISOString() },
+    { id: '2', name: 'news_tech_ai_chip_1793801922448.jpg', url: '/assets/images/news_tech_ai_chip_1793801922448.jpg', size: 185000, created_at: new Date().toISOString() },
+    { id: '3', name: 'news_dhaka_metro_1793801923998.jpg', url: '/assets/images/news_dhaka_metro_1793801923998.jpg', size: 215000, created_at: new Date().toISOString() },
+    { id: '4', name: 'news_cricket_stadium_1793801922344.jpg', url: '/assets/images/news_cricket_stadium_1793801922344.jpg', size: 198000, created_at: new Date().toISOString() },
+  ]);
 
   // Real-time Audit Logs from server
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -172,9 +177,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   };
 
   const loadAllData = async () => {
+    // 1. Immediately ensure state matches latest local database cache
+    const local = api.getLocalDatabaseState();
+    if (local) {
+      if (local.articles?.length) setArticles(local.articles);
+      if (local.categories?.length) setCategories(local.categories);
+      if (local.breaking_news?.length) setBreakingNews(local.breaking_news);
+      if (local.ads?.length) setAds(local.ads);
+      if (local.videos?.length) setVideos(local.videos);
+      if (local.authors?.length) setAuthors(local.authors);
+      if (local.comments?.length) setComments(local.comments);
+      if (local.subscribers?.length) setSubscribers(local.subscribers);
+      if (local.settings) setSettings(local.settings);
+      if (local.admin_users?.length) setAdminUsers(local.admin_users as any);
+    }
+
+    // 2. Safely sync in background using Promise.allSettled
     try {
-      const [artRes, catRes, bnRes, adsRes, vidRes, authRes, commRes, subRes, setRes, admRes, medRes] = await Promise.all([
-        api.getArticles(),
+      const results = await Promise.allSettled([
+        api.getArticles({ limit: 100 }),
         api.getCategories(),
         api.getBreakingNews(true),
         api.getAds(),
@@ -186,22 +207,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
         api.getAdminUsers(),
         api.getMedia(),
       ]);
-      setArticles(artRes.items);
-      setCategories(catRes);
-      setBreakingNews(bnRes);
-      setAds(adsRes);
-      setVideos(vidRes);
-      setAuthors(authRes);
-      setComments(commRes);
-      setSubscribers(subRes);
-      setSettings(setRes);
-      setAdminUsers(admRes);
-      setMediaFiles(medRes);
+
+      if (results[0].status === 'fulfilled' && results[0].value?.items?.length) setArticles(results[0].value.items);
+      if (results[1].status === 'fulfilled' && results[1].value?.length) setCategories(results[1].value);
+      if (results[2].status === 'fulfilled' && results[2].value?.length) setBreakingNews(results[2].value);
+      if (results[3].status === 'fulfilled' && results[3].value?.length) setAds(results[3].value);
+      if (results[4].status === 'fulfilled' && results[4].value?.length) setVideos(results[4].value);
+      if (results[5].status === 'fulfilled' && results[5].value?.length) setAuthors(results[5].value);
+      if (results[6].status === 'fulfilled' && results[6].value?.length) setComments(results[6].value);
+      if (results[7].status === 'fulfilled' && results[7].value?.length) setSubscribers(results[7].value);
+      if (results[8].status === 'fulfilled' && results[8].value) setSettings(results[8].value);
+      if (results[9].status === 'fulfilled' && results[9].value?.length) setAdminUsers(results[9].value);
+      if (results[10].status === 'fulfilled' && results[10].value?.length) setMediaFiles(results[10].value);
       loadAuditLogs();
     } catch (e) {
-      console.error('Error loading admin data', e);
+      console.warn('Background sync completed with local state active:', e);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAllData();
+    }
+  }, [isAuthenticated]);
 
   // Verify Active Session on Mount - strictly require email & password authentication
   useEffect(() => {
@@ -299,10 +327,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
       });
 
       if (res.success && res.token && res.user) {
+        sessionStorage.setItem('png_active_admin_session', 'true');
         localStorage.setItem('png_admin_token', res.token);
         localStorage.setItem('png_admin_user', JSON.stringify(res.user));
         setIsAuthenticated(true);
         setCurrentUser(res.user);
+        loadAllData();
         showToast('Authentication confirmed. Welcome to PRIME NEWS GRAPH CMS.');
       } else {
         setLoginError(res.message || 'Invalid verification code.');
@@ -1245,6 +1275,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                             src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
                             alt=""
                             onError={handleImageError}
+                            loading="lazy"
                             className="h-10 w-14 object-cover rounded bg-slate-100 shrink-0"
                           />
                           <div>
@@ -1303,6 +1334,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                       </div>
                       <Database className="h-5 w-5 text-emerald-600" />
                     </button>
+
+                    <a
+                      href="/prime-news-graph-direct-netlify-drop.zip"
+                      download="prime-news-graph-direct-netlify-drop.zip"
+                      className="w-full flex items-center justify-between p-3 rounded-lg border border-blue-200 hover:border-[#246BFD] bg-gradient-to-r from-blue-50 to-indigo-50 text-left transition-colors cursor-pointer"
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                          <span>📦 Netlify Live ZIP ডাউনলোড করুন</span>
+                          <span className="px-1.5 py-0.5 rounded bg-blue-600 text-[9px] font-bold text-white uppercase">Direct Drop</span>
+                        </div>
+                        <div className="text-[10px] text-blue-700 mt-0.5">১ ক্লিকে Netlify-তে ড্রপ করার প্রস্তুত প্যাকেজ</div>
+                      </div>
+                      <Download className="h-5 w-5 text-[#246BFD]" />
+                    </a>
                   </div>
                 </div>
               </div>
@@ -1382,6 +1428,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                                 src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
                                 alt=""
                                 onError={handleImageError}
+                                loading="lazy"
                                 className="h-10 w-14 object-cover rounded bg-slate-100 shrink-0"
                               />
                               <div>
@@ -1631,6 +1678,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           <img
                             src={preset.url}
                             alt=""
+                            loading="lazy"
                             className="h-12 w-full object-cover rounded"
                           />
                           <span className="block text-[10px] font-bold text-slate-700 mt-1 truncate">
@@ -1667,6 +1715,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           src={normalizeImageUrl(editingArticle?.featured_image, editingArticle?.title_bn, editingArticle?.category_slug)}
                           alt="Preview"
                           onError={handleImageError}
+                          loading="lazy"
                           className="h-full w-full object-cover"
                         />
                         <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-emerald-300">
@@ -1975,6 +2024,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                             src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
                             alt=""
                             onError={handleImageError}
+                            loading="lazy"
                             className="h-8 w-12 rounded object-cover"
                           />
                           <span className="text-xs font-semibold text-slate-800 line-clamp-1 max-w-xs">{art.title_bn}</span>
@@ -2003,6 +2053,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                             src={normalizeImageUrl(art.featured_image, art.title_bn, art.category_slug)}
                             alt=""
                             onError={handleImageError}
+                            loading="lazy"
                             className="h-8 w-12 rounded object-cover"
                           />
                           <span className="text-xs font-semibold text-slate-800 line-clamp-1 max-w-xs">{art.title_bn}</span>
@@ -2157,7 +2208,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                 ].map((item, idx) => (
                   <div key={idx} className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs group">
                     <div className="aspect-square bg-slate-100 overflow-hidden relative">
-                      <img src={item.url} alt="" className="h-full w-full object-cover" />
+                      <img src={item.url} alt="" loading="lazy" className="h-full w-full object-cover" />
                     </div>
                     <div className="p-2">
                       <div className="text-[11px] font-bold text-slate-800 truncate">{item.name}</div>
@@ -2179,7 +2230,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                 {mediaFiles.map(file => (
                   <div key={file.id} className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs group">
                     <div className="aspect-square bg-slate-100 overflow-hidden relative">
-                      <img src={file.url} alt="" className="h-full w-full object-cover" />
+                      <img src={file.url} alt="" loading="lazy" className="h-full w-full object-cover" />
                     </div>
                     <div className="p-2">
                       <div className="text-[11px] font-bold text-slate-800 truncate">{file.name}</div>
@@ -2263,7 +2314,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                 {videos.map(v => (
                   <div key={v.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
                     <div className="aspect-video bg-black relative">
-                      <img src={`https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg`} alt="" className="w-full h-full object-cover" />
+                      <img src={`https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg`} alt="" loading="lazy" className="w-full h-full object-cover" />
                     </div>
                     <div className="p-4">
                       <h4 className="text-xs font-bold text-slate-900 line-clamp-2">{v.title_bn}</h4>
@@ -2333,7 +2384,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                 {authors.map(a => (
                   <div key={a.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs text-center flex flex-col justify-between">
                     <div>
-                      <img src={a.avatar} alt="" className="h-16 w-16 rounded-full mx-auto object-cover border border-slate-200 mb-3" />
+                      <img src={a.avatar} alt="" loading="lazy" className="h-16 w-16 rounded-full mx-auto object-cover border border-slate-200 mb-3" />
                       <h4 className="text-sm font-bold text-slate-900">{a.name}</h4>
                       <p className="text-xs text-[#246BFD] font-medium">{a.role}</p>
                       <p className="mt-2 text-[11px] text-slate-500 line-clamp-2">{a.bio_bn}</p>
@@ -3086,7 +3137,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                   </ul>
                 </div>
 
-                <div className="space-y-4">
+                {/* 1-Click ZIP Download Action Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <a
+                    href="/prime-news-graph-direct-netlify-drop.zip"
+                    download="prime-news-graph-direct-netlify-drop.zip"
+                    className="flex flex-col justify-between p-4 rounded-xl border-2 border-[#246BFD] bg-blue-50/60 hover:bg-blue-100/70 transition-colors group cursor-pointer"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-[#246BFD] text-[10px] font-bold uppercase tracking-wider text-white">
+                          Netlify Direct Drop (লাইভ রেডি)
+                        </span>
+                        <Download className="h-5 w-5 text-[#246BFD] transition-transform group-hover:scale-110" />
+                      </div>
+                      <h4 className="mt-2 text-sm font-bold text-slate-900">
+                        📦 prime-news-graph-direct-netlify-drop.zip
+                      </h4>
+                      <p className="mt-1 text-xs text-slate-600">
+                        সরাসরি Netlify Deploys স্ক্রিনে Drag & Drop করার জন্য তৈরি সম্পূর্ণ প্রোডাকশন প্যাকেজ (index.html, _redirects, এসেটস রুট ফোল্ডারে প্রস্তুত)।
+                      </p>
+                    </div>
+                    <div className="mt-3 text-xs font-bold text-[#246BFD] flex items-center gap-1">
+                      <span>এই জিপ ফাইলটি ডাউনলোড করুন &rarr;</span>
+                    </div>
+                  </a>
+
+                  <a
+                    href="/prime-news-graph-full-deployment-package.zip"
+                    download="prime-news-graph-full-deployment-package.zip"
+                    className="flex flex-col justify-between p-4 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors group cursor-pointer"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-slate-700 text-[10px] font-bold uppercase tracking-wider text-white">
+                          Full Source Code (সম্পূর্ণ সোর্স কোড)
+                        </span>
+                        <Download className="h-5 w-5 text-slate-700 transition-transform group-hover:scale-110" />
+                      </div>
+                      <h4 className="mt-2 text-sm font-bold text-slate-900">
+                        📂 prime-news-graph-full-deployment-package.zip
+                      </h4>
+                      <p className="mt-1 text-xs text-slate-600">
+                        GitHub-এ আপলোড অথবা যেকোনো সার্ভারে ডিপ্লয় করার জন্য সমস্ত React, TypeScript, Netlify Functions ও কনফিগারেশন সোর্স কোড।
+                      </p>
+                    </div>
+                    <div className="mt-3 text-xs font-bold text-slate-700 flex items-center gap-1">
+                      <span>সোর্স কোড জিপ ডাউনলোড করুন &rarr;</span>
+                    </div>
+                  </a>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-slate-100">
                   <h3 className="text-base font-bold text-slate-900">Option A: Deploy via GitHub + Netlify (Recommended)</h3>
                   <ol className="list-decimal pl-5 text-xs text-slate-600 space-y-2">
                     <li>Push this repository to your GitHub account.</li>

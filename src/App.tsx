@@ -28,14 +28,14 @@ export function NewsPortalApp() {
   const [selectedArticleSlug, setSelectedArticleSlug] = useState<string | null>(null);
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
 
-  // Data States
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [breakingNews, setBreakingNews] = useState<BreakingNewsItem[]>([]);
-  const [ads, setAds] = useState<AdSlot[]>([]);
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [settings, setSettings] = useState<WebsiteSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Data States pre-populated instantly from local database
+  const [articles, setArticles] = useState<Article[]>(() => api.getLocalDatabaseState().articles || []);
+  const [categories, setCategories] = useState<Category[]>(() => api.getLocalDatabaseState().categories || []);
+  const [breakingNews, setBreakingNews] = useState<BreakingNewsItem[]>(() => api.getLocalDatabaseState().breaking_news || []);
+  const [ads, setAds] = useState<AdSlot[]>(() => api.getLocalDatabaseState().ads || []);
+  const [videos, setVideos] = useState<VideoItem[]>(() => api.getLocalDatabaseState().videos || []);
+  const [settings, setSettings] = useState<WebsiteSettings | null>(() => api.getLocalDatabaseState().settings || null);
+  const [loading, setLoading] = useState(false);
 
   // Modals
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -45,8 +45,17 @@ export function NewsPortalApp() {
   // Load initial data
   const loadData = async () => {
     try {
-      setLoading(true);
-      const [artRes, catRes, bnRes, adsRes, vidRes, setRes] = await Promise.all([
+      const local = api.getLocalDatabaseState();
+      if (local) {
+        if (local.articles?.length) setArticles(local.articles);
+        if (local.categories?.length) setCategories(local.categories);
+        if (local.breaking_news?.length) setBreakingNews(local.breaking_news);
+        if (local.ads?.length) setAds(local.ads);
+        if (local.videos?.length) setVideos(local.videos);
+        if (local.settings) setSettings(local.settings);
+      }
+
+      const results = await Promise.allSettled([
         api.getArticles(),
         api.getCategories(),
         api.getBreakingNews(false),
@@ -54,14 +63,14 @@ export function NewsPortalApp() {
         api.getVideos(),
         api.getSettings(),
       ]);
-      setArticles(artRes.items);
-      setCategories(catRes);
-      setBreakingNews(bnRes);
-      setAds(adsRes);
-      setVideos(vidRes);
-      setSettings(setRes);
+      if (results[0].status === 'fulfilled' && results[0].value?.items?.length) setArticles(results[0].value.items);
+      if (results[1].status === 'fulfilled' && results[1].value?.length) setCategories(results[1].value);
+      if (results[2].status === 'fulfilled' && results[2].value?.length) setBreakingNews(results[2].value);
+      if (results[3].status === 'fulfilled' && results[3].value?.length) setAds(results[3].value);
+      if (results[4].status === 'fulfilled' && results[4].value?.length) setVideos(results[4].value);
+      if (results[5].status === 'fulfilled' && results[5].value) setSettings(results[5].value);
     } catch (e) {
-      console.error('Failed to load portal data', e);
+      console.warn('Live portal data sync completed with local state active:', e);
     } finally {
       setLoading(false);
     }

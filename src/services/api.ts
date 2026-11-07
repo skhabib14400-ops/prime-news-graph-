@@ -4,7 +4,7 @@ import { DEFAULT_DATABASE_STATE } from '../data/fallbackData';
 const BASE_URL = '';
 
 // Local state cache in browser memory and localStorage
-const STORAGE_KEY = 'png_local_db_cache_v5';
+const STORAGE_KEY = 'png_local_db_cache_v6';
 
 function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
   if (!state) return state;
@@ -22,9 +22,12 @@ function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
         if (img.includes('/src/assets/images/')) {
           img = img.replace('/src/assets/images/', '/assets/images/');
         }
+        if (img.startsWith('src/assets/images/')) {
+          img = `/${img}`;
+        }
 
         // If image is missing, empty, or broken, supply smart category image
-        if (!img || img === '/assets/images/' || !img.includes('/')) {
+        if (!img || img === '/assets/images/' || !img.includes('/') || img === 'undefined' || img === 'null') {
           const text = `${art.title_bn || ''} ${art.title_en || ''} ${art.category_slug || ''}`.toLowerCase();
           if (text.includes('বুদ্ধিমত্তা') || text.includes('ai') || text.includes('tech') || text.includes('প্রযুক্তি') || text.includes('chip') || text.includes('technology')) {
             img = '/assets/images/news_tech_ai_chip_1793801922448.jpg';
@@ -47,7 +50,7 @@ function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
 
 // Clean up legacy caches with broken /src/ paths once
 try {
-  ['png_local_db_cache_v1', 'png_local_db_cache_v2', 'png_local_db_cache_v3', 'png_local_db_cache_v4'].forEach(k => {
+  ['png_local_db_cache_v1', 'png_local_db_cache_v2', 'png_local_db_cache_v3', 'png_local_db_cache_v4', 'png_local_db_cache_v5'].forEach(k => {
     if (localStorage.getItem(k)) localStorage.removeItem(k);
   });
 } catch {}
@@ -91,7 +94,25 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+async function safeJsonFetch<T>(url: string, options?: RequestInit): Promise<T | null> {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return null;
+    }
+    const data = await res.json();
+    return data as T;
+  } catch {
+    return null;
+  }
+}
+
 export const api = {
+  getLocalDatabaseState(): DatabaseState {
+    return getLocalState();
+  },
   // Articles
   async getArticles(params?: { category?: string; status?: string; search?: string; featured?: boolean; limit?: number; offset?: number }): Promise<{ total: number; items: Article[] }> {
     const localState = getLocalState();
@@ -170,12 +191,8 @@ export const api = {
   },
 
   async getArticleBySlug(slug: string): Promise<Article> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/articles/${slug}`);
-      if (res.ok) return await res.json();
-    } catch {
-      // Fall through
-    }
+    const data = await safeJsonFetch<Article>(`${BASE_URL}/api/articles/${slug}`);
+    if (data && (data.id || data.slug)) return data;
 
     const state = getLocalState();
     const article = (state.articles || []).find(a => a.slug === slug || a.id === slug);
@@ -184,12 +201,8 @@ export const api = {
   },
 
   async incrementViews(id: string): Promise<{ views: number }> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/articles/${id}/view`, { method: 'POST' });
-      if (res.ok) return await res.json();
-    } catch {
-      // Fall through
-    }
+    const data = await safeJsonFetch<{ views: number }>(`${BASE_URL}/api/articles/${id}/view`, { method: 'POST' });
+    if (data && typeof data.views === 'number') return data;
 
     const state = getLocalState();
     const article = (state.articles || []).find(a => a.id === id || a.slug === id);
@@ -226,13 +239,12 @@ export const api = {
       const url = isNew ? `${BASE_URL}/api/articles` : `${BASE_URL}/api/articles/${article.id}`;
       const method = isNew ? 'POST' : 'PUT';
 
-      const res = await fetch(url, {
+      const saved = await safeJsonFetch<Article>(url, {
         method,
         headers: getAuthHeaders(),
         body: JSON.stringify(article),
       });
-      if (res.ok) {
-        const saved = await res.json();
+      if (saved && saved.id) {
         // sync to local state
         const state = getLocalState();
         if (isNew) state.articles = [saved, ...(state.articles || [])];
@@ -268,20 +280,11 @@ export const api = {
 
   async deleteArticle(id: string): Promise<{ success: boolean }> {
     try {
-      const res = await fetch(`${BASE_URL}/api/articles/${id}`, {
+      await safeJsonFetch(`${BASE_URL}/api/articles/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
-      if (res.ok) {
-        const state = getLocalState();
-        state.articles = (state.articles || []).filter(a => a.id !== id && a.slug !== id);
-        saveLocalState(state);
-        notifyDataUpdated({ type: 'article_deleted', id });
-        return { success: true };
-      }
-    } catch {
-      // Fall through
-    }
+    } catch {}
 
     const state = getLocalState();
     state.articles = (state.articles || []).filter(a => a.id !== id && a.slug !== id);
@@ -292,15 +295,8 @@ export const api = {
 
   // Categories
   async getCategories(): Promise<Category[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/categories`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch {
-      // Fall through
-    }
+    const data = await safeJsonFetch<Category[]>(`${BASE_URL}/api/categories`);
+    if (Array.isArray(data) && data.length > 0) return data;
     return getLocalState().categories || [];
   },
 
@@ -310,22 +306,20 @@ export const api = {
       const url = isNew ? `${BASE_URL}/api/categories` : `${BASE_URL}/api/categories/${cat.id}`;
       const method = isNew ? 'POST' : 'PUT';
 
-      const res = await fetch(url, {
+      const saved = await safeJsonFetch<Category>(url, {
         method,
         headers: getAuthHeaders(),
         body: JSON.stringify(cat),
       });
-      if (res.ok) {
-        const saved = await res.json();
+      if (saved && saved.id) {
         const state = getLocalState();
         if (isNew) state.categories = [...(state.categories || []), saved];
         else state.categories = (state.categories || []).map(c => c.id === saved.id ? saved : c);
         saveLocalState(state);
+        notifyDataUpdated({ type: 'category', data: saved });
         return saved;
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
 
     const state = getLocalState();
     const id = cat.id || `cat-${Date.now()}`;
@@ -334,42 +328,29 @@ export const api = {
     if (existingIdx >= 0) state.categories[existingIdx] = saved;
     else state.categories = [...(state.categories || []), saved];
     saveLocalState(state);
+    notifyDataUpdated({ type: 'category', data: saved });
     return saved;
   },
 
   async deleteCategory(id: string): Promise<{ success: boolean }> {
     try {
-      const res = await fetch(`${BASE_URL}/api/categories/${id}`, {
+      await safeJsonFetch(`${BASE_URL}/api/categories/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
-      if (res.ok) {
-        const state = getLocalState();
-        state.categories = (state.categories || []).filter(c => c.id !== id);
-        saveLocalState(state);
-        return { success: true };
-      }
-    } catch {
-      // Fall through
-    }
+    } catch {}
 
     const state = getLocalState();
     state.categories = (state.categories || []).filter(c => c.id !== id);
     saveLocalState(state);
+    notifyDataUpdated({ type: 'category_deleted', id });
     return { success: true };
   },
 
   // Breaking News
   async getBreakingNews(all = false): Promise<BreakingNewsItem[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/breaking-news?all=${all}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch {
-      // Fall through
-    }
+    const data = await safeJsonFetch<BreakingNewsItem[]>(`${BASE_URL}/api/breaking-news?all=${all}`);
+    if (Array.isArray(data) && data.length > 0) return data;
 
     const bn = getLocalState().breaking_news || [];
     return all ? bn : bn.filter(item => item.is_active);
@@ -381,22 +362,20 @@ export const api = {
       const url = isNew ? `${BASE_URL}/api/breaking-news` : `${BASE_URL}/api/breaking-news/${item.id}`;
       const method = isNew ? 'POST' : 'PUT';
 
-      const res = await fetch(url, {
+      const saved = await safeJsonFetch<BreakingNewsItem>(url, {
         method,
         headers: getAuthHeaders(),
         body: JSON.stringify(item),
       });
-      if (res.ok) {
-        const saved = await res.json();
+      if (saved && saved.id) {
         const state = getLocalState();
         if (isNew) state.breaking_news = [saved, ...(state.breaking_news || [])];
         else state.breaking_news = (state.breaking_news || []).map(b => b.id === saved.id ? saved : b);
         saveLocalState(state);
+        notifyDataUpdated({ type: 'breaking_news', data: saved });
         return saved;
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
 
     const state = getLocalState();
     const id = item.id || `bn-${Date.now()}`;
@@ -405,42 +384,29 @@ export const api = {
     if (existingIdx >= 0) state.breaking_news[existingIdx] = saved;
     else state.breaking_news = [saved, ...(state.breaking_news || [])];
     saveLocalState(state);
+    notifyDataUpdated({ type: 'breaking_news', data: saved });
     return saved;
   },
 
   async deleteBreakingNews(id: string): Promise<{ success: boolean }> {
     try {
-      const res = await fetch(`${BASE_URL}/api/breaking-news/${id}`, {
+      await safeJsonFetch(`${BASE_URL}/api/breaking-news/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
-      if (res.ok) {
-        const state = getLocalState();
-        state.breaking_news = (state.breaking_news || []).filter(b => b.id !== id);
-        saveLocalState(state);
-        return { success: true };
-      }
-    } catch {
-      // Fall through
-    }
+    } catch {}
 
     const state = getLocalState();
     state.breaking_news = (state.breaking_news || []).filter(b => b.id !== id);
     saveLocalState(state);
+    notifyDataUpdated({ type: 'breaking_news_deleted', id });
     return { success: true };
   },
 
   // Ads
   async getAds(): Promise<AdSlot[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/ads`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch {
-      // Fall through
-    }
+    const data = await safeJsonFetch<AdSlot[]>(`${BASE_URL}/api/ads`);
+    if (Array.isArray(data) && data.length > 0) return data;
     return getLocalState().ads || [];
   },
 
@@ -493,87 +459,91 @@ export const api = {
 
   // Videos
   async getVideos(): Promise<VideoItem[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/videos`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch {
-      // Fall through
-    }
+    const data = await safeJsonFetch<VideoItem[]>(`${BASE_URL}/api/videos`);
+    if (Array.isArray(data) && data.length > 0) return data;
     return getLocalState().videos || [];
   },
 
   async saveVideo(video: Partial<VideoItem>): Promise<VideoItem> {
     try {
-      const res = await fetch(`${BASE_URL}/api/videos`, {
+      const saved = await safeJsonFetch<VideoItem>(`${BASE_URL}/api/videos`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(video),
       });
-      if (res.ok) return await res.json();
-    } catch {
-      // Fall through
-    }
+      if (saved && saved.id) {
+        const state = getLocalState();
+        state.videos = [saved, ...(state.videos || []).filter(v => v.id !== saved.id)];
+        saveLocalState(state);
+        notifyDataUpdated({ type: 'video', data: saved });
+        return saved;
+      }
+    } catch {}
 
     const state = getLocalState();
     const id = video.id || `vid-${Date.now()}`;
     const saved = { ...video, id, published_at: video.published_at || new Date().toISOString() } as VideoItem;
-    state.videos = [saved, ...(state.videos || [])];
+    state.videos = [saved, ...(state.videos || []).filter(v => v.id !== id)];
     saveLocalState(state);
+    notifyDataUpdated({ type: 'video', data: saved });
     return saved;
   },
 
   async deleteVideo(id: string): Promise<{ success: boolean }> {
     try {
-      fetch(`${BASE_URL}/api/videos/${id}`, { method: 'DELETE', headers: getAuthHeaders() }).catch(() => {});
+      await safeJsonFetch(`${BASE_URL}/api/videos/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     } catch {}
     const state = getLocalState();
     state.videos = (state.videos || []).filter(v => v.id !== id);
     saveLocalState(state);
+    notifyDataUpdated({ type: 'video_deleted', id });
     return { success: true };
   },
 
   // Authors
   async getAuthors(): Promise<Author[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/authors`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch {
-      // Fall through
-    }
+    const data = await safeJsonFetch<Author[]>(`${BASE_URL}/api/authors`);
+    if (Array.isArray(data) && data.length > 0) return data;
     return getLocalState().authors || [];
   },
 
   async saveAuthor(author: Partial<Author>): Promise<Author> {
     try {
-      const res = await fetch(`${BASE_URL}/api/authors`, {
+      const saved = await safeJsonFetch<Author>(`${BASE_URL}/api/authors`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(author),
       });
-      if (res.ok) return await res.json();
+      if (saved && saved.id) {
+        const state = getLocalState();
+        const existingIdx = (state.authors || []).findIndex(a => a.id === saved.id);
+        if (existingIdx >= 0) state.authors[existingIdx] = saved;
+        else state.authors = [...(state.authors || []), saved];
+        saveLocalState(state);
+        notifyDataUpdated({ type: 'author', data: saved });
+        return saved;
+      }
     } catch {}
 
     const state = getLocalState();
     const id = author.id || `auth-${Date.now()}`;
     const saved = { ...author, id } as Author;
-    state.authors = [...(state.authors || []), saved];
+    const existingIdx = (state.authors || []).findIndex(a => a.id === id);
+    if (existingIdx >= 0) state.authors[existingIdx] = saved;
+    else state.authors = [...(state.authors || []), saved];
     saveLocalState(state);
+    notifyDataUpdated({ type: 'author', data: saved });
     return saved;
   },
 
   async deleteAuthor(id: string): Promise<{ success: boolean }> {
     try {
-      fetch(`${BASE_URL}/api/authors/${id}`, { method: 'DELETE', headers: getAuthHeaders() }).catch(() => {});
+      await safeJsonFetch(`${BASE_URL}/api/authors/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     } catch {}
     const state = getLocalState();
     state.authors = (state.authors || []).filter(a => a.id !== id);
     saveLocalState(state);
+    notifyDataUpdated({ type: 'author_deleted', id });
     return { success: true };
   },
 
@@ -584,8 +554,8 @@ export const api = {
       if (params?.article_id) query.set('article_id', params.article_id);
       if (params?.status) query.set('status', params.status);
 
-      const res = await fetch(`${BASE_URL}/api/comments?${query.toString()}`);
-      if (res.ok) return await res.json();
+      const data = await safeJsonFetch<CommentItem[]>(`${BASE_URL}/api/comments?${query.toString()}`);
+      if (Array.isArray(data) && data.length > 0) return data;
     } catch {}
 
     const state = getLocalState();
@@ -596,12 +566,18 @@ export const api = {
 
   async postComment(comment: { article_id: string; author_name: string; author_email: string; content: string }): Promise<CommentItem> {
     try {
-      const res = await fetch(`${BASE_URL}/api/comments`, {
+      const saved = await safeJsonFetch<CommentItem>(`${BASE_URL}/api/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(comment),
       });
-      if (res.ok) return await res.json();
+      if (saved && saved.id) {
+        const state = getLocalState();
+        state.comments = [saved, ...(state.comments || [])];
+        saveLocalState(state);
+        notifyDataUpdated({ type: 'comment', data: saved });
+        return saved;
+      }
     } catch {}
 
     const state = getLocalState();
@@ -616,52 +592,53 @@ export const api = {
     };
     state.comments = [newComment, ...(state.comments || [])];
     saveLocalState(state);
+    notifyDataUpdated({ type: 'comment', data: newComment });
     return newComment;
   },
 
   async updateCommentStatus(id: string, status: 'approved' | 'pending' | 'spam'): Promise<{ success: boolean }> {
     try {
-      fetch(`${BASE_URL}/api/comments/${id}/status`, {
+      await safeJsonFetch(`${BASE_URL}/api/comments/${id}/status`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ status }),
-      }).catch(() => {});
+      });
     } catch {}
 
     const state = getLocalState();
     const c = (state.comments || []).find(x => x.id === id);
     if (c) c.status = status;
     saveLocalState(state);
+    notifyDataUpdated({ type: 'comment_status', id, status });
     return { success: true };
   },
 
   async deleteComment(id: string): Promise<{ success: boolean }> {
     try {
-      fetch(`${BASE_URL}/api/comments/${id}`, { method: 'DELETE', headers: getAuthHeaders() }).catch(() => {});
+      await safeJsonFetch(`${BASE_URL}/api/comments/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     } catch {}
     const state = getLocalState();
     state.comments = (state.comments || []).filter(c => c.id !== id);
     saveLocalState(state);
+    notifyDataUpdated({ type: 'comment_deleted', id });
     return { success: true };
   },
 
   // Newsletter
   async getSubscribers(): Promise<NewsletterSubscriber[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/newsletter`);
-      if (res.ok) return await res.json();
-    } catch {}
+    const data = await safeJsonFetch<NewsletterSubscriber[]>(`${BASE_URL}/api/newsletter`);
+    if (Array.isArray(data) && data.length > 0) return data;
     return getLocalState().subscribers || [];
   },
 
   async subscribeNewsletter(email: string): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch(`${BASE_URL}/api/newsletter`, {
+      const saved = await safeJsonFetch<any>(`${BASE_URL}/api/newsletter`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      if (res.ok) return await res.json();
+      if (saved && saved.success) return saved;
     } catch {}
 
     const state = getLocalState();
@@ -673,43 +650,44 @@ export const api = {
     };
     state.subscribers = [newSub, ...(state.subscribers || [])];
     saveLocalState(state);
+    notifyDataUpdated({ type: 'subscribers' });
     return { success: true, message: 'Thank you for subscribing to PRIME NEWS GRAPH.' };
   },
 
   // Settings
   async getSettings(): Promise<WebsiteSettings> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/settings`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.site_name) return data;
-      }
-    } catch {}
+    const data = await safeJsonFetch<WebsiteSettings>(`${BASE_URL}/api/settings`);
+    if (data && data.site_name) return data;
     return getLocalState().settings || (DEFAULT_DATABASE_STATE.settings as WebsiteSettings);
   },
 
   async updateSettings(settings: Partial<WebsiteSettings>): Promise<WebsiteSettings> {
     try {
-      const res = await fetch(`${BASE_URL}/api/settings`, {
+      const saved = await safeJsonFetch<WebsiteSettings>(`${BASE_URL}/api/settings`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(settings),
       });
-      if (res.ok) return await res.json();
+      if (saved && saved.site_name) {
+        const state = getLocalState();
+        state.settings = saved;
+        saveLocalState(state);
+        notifyDataUpdated({ type: 'settings', data: saved });
+        return saved;
+      }
     } catch {}
 
     const state = getLocalState();
-    state.settings = { ...(state.settings || ({} as any)), ...settings } as any;
+    state.settings = { ...(state.settings || (DEFAULT_DATABASE_STATE.settings as any)), ...settings } as any;
     saveLocalState(state);
+    notifyDataUpdated({ type: 'settings', data: state.settings });
     return state.settings;
   },
 
   // Media
   async getMedia(): Promise<any[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/media`);
-      if (res.ok) return await res.json();
-    } catch {}
+    const data = await safeJsonFetch<any[]>(`${BASE_URL}/api/media`);
+    if (Array.isArray(data) && data.length > 0) return data;
     return [
       { id: '1', name: 'news_world_summit_1793801922828.jpg', url: '/assets/images/news_world_summit_1793801922828.jpg', size: 245000, created_at: new Date().toISOString() },
       { id: '2', name: 'news_tech_ai_chip_1793801922448.jpg', url: '/assets/images/news_tech_ai_chip_1793801922448.jpg', size: 185000, created_at: new Date().toISOString() },
@@ -720,12 +698,12 @@ export const api = {
 
   async uploadMedia(filename: string, base64Data: string): Promise<any> {
     try {
-      const res = await fetch(`${BASE_URL}/api/media/upload`, {
+      const res = await safeJsonFetch<any>(`${BASE_URL}/api/media/upload`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ filename, base64Data }),
       });
-      if (res.ok) return await res.json();
+      if (res && res.url) return res;
     } catch {}
 
     return {
@@ -739,7 +717,7 @@ export const api = {
 
   async deleteMedia(filename: string): Promise<{ success: boolean }> {
     try {
-      fetch(`${BASE_URL}/api/media/${filename}`, { method: 'DELETE', headers: getAuthHeaders() }).catch(() => {});
+      await safeJsonFetch(`${BASE_URL}/api/media/${filename}`, { method: 'DELETE', headers: getAuthHeaders() });
     } catch {}
     return { success: true };
   },
@@ -747,14 +725,8 @@ export const api = {
   // --- Multi-Factor Authentication & Administrative Security ---
 
   async getCaptcha(): Promise<{ id: string; question: string }> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/captcha`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // Offline fallback
-    }
+    const data = await safeJsonFetch<{ id: string; question: string }>(`${BASE_URL}/api/auth/captcha`);
+    if (data && data.id && data.question) return data;
 
     // Client-side math puzzle fallback so admin can ALWAYS log in on Netlify Drop
     const a = Math.floor(Math.random() * 8) + 2;
@@ -779,17 +751,13 @@ export const api = {
     dev2FACode?: string;
     message?: string;
   }> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/login-step1`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // Fall through to client-side auth validation
+    const serverRes = await safeJsonFetch<any>(`${BASE_URL}/api/auth/login-step1`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (serverRes && typeof serverRes.success === 'boolean') {
+      return serverRes;
     }
 
     // Verify arithmetic challenge
@@ -834,23 +802,17 @@ export const api = {
     expiresAt?: number;
     message?: string;
   }> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/login-step2`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.success && data.token) {
-          localStorage.setItem('png_admin_token', data.token);
-          if (data.user) localStorage.setItem('png_admin_user', JSON.stringify(data.user));
-          if (data.expiresAt) localStorage.setItem('png_admin_expires', String(data.expiresAt));
-          return data;
-        }
-      }
-    } catch {
-      // Fall through
+    const serverRes = await safeJsonFetch<any>(`${BASE_URL}/api/auth/login-step2`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (serverRes && serverRes.success && serverRes.token) {
+      sessionStorage.setItem('png_active_admin_session', 'true');
+      localStorage.setItem('png_admin_token', serverRes.token);
+      if (serverRes.user) localStorage.setItem('png_admin_user', JSON.stringify(serverRes.user));
+      if (serverRes.expiresAt) localStorage.setItem('png_admin_expires', String(serverRes.expiresAt));
+      return serverRes;
     }
 
     // Emergency backup codes check
@@ -864,6 +826,7 @@ export const api = {
         two_factor_enabled: true
       };
       const expiresAt = Date.now() + 7200000;
+      sessionStorage.setItem('png_active_admin_session', 'true');
       localStorage.setItem('png_admin_token', token);
       localStorage.setItem('png_admin_user', JSON.stringify(user));
       localStorage.setItem('png_admin_expires', String(expiresAt));
@@ -883,6 +846,7 @@ export const api = {
           two_factor_enabled: true
         };
         const expiresAt = Date.now() + 7200000;
+        sessionStorage.setItem('png_active_admin_session', 'true');
         localStorage.setItem('png_admin_token', token);
         localStorage.setItem('png_admin_user', JSON.stringify(user));
         localStorage.setItem('png_admin_expires', String(expiresAt));
@@ -947,15 +911,10 @@ export const api = {
       return { valid: false };
     }
 
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/session`, {
-        headers: getAuthHeaders(),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.valid) return data;
-      }
-    } catch {}
+    const serverRes = await safeJsonFetch<any>(`${BASE_URL}/api/auth/session`, {
+      headers: getAuthHeaders(),
+    });
+    if (serverRes && serverRes.valid) return serverRes;
 
     // Only accept validly issued sessions
     const storedUser = localStorage.getItem('png_admin_user');
@@ -982,11 +941,12 @@ export const api = {
 
   async logout(): Promise<void> {
     try {
-      fetch(`${BASE_URL}/api/auth/logout`, {
+      await safeJsonFetch(`${BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: getAuthHeaders(),
-      }).catch(() => {});
+      });
     } finally {
+      sessionStorage.removeItem('png_active_admin_session');
       localStorage.removeItem('png_admin_token');
       localStorage.removeItem('png_admin_user');
       localStorage.removeItem('png_admin_expires');
@@ -995,18 +955,15 @@ export const api = {
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string; token?: string }> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/change-password`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token) localStorage.setItem('png_admin_token', data.token);
-        return data;
-      }
-    } catch {}
+    const serverRes = await safeJsonFetch<any>(`${BASE_URL}/api/auth/change-password`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (serverRes && serverRes.success) {
+      if (serverRes.token) localStorage.setItem('png_admin_token', serverRes.token);
+      return serverRes;
+    }
 
     return {
       success: true,
@@ -1043,12 +1000,10 @@ export const api = {
   },
 
   async getAuditLogs(): Promise<any[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/admin/audit-logs`, {
-        headers: getAuthHeaders(),
-      });
-      if (res.ok) return await res.json();
-    } catch {}
+    const data = await safeJsonFetch<any[]>(`${BASE_URL}/api/admin/audit-logs`, {
+      headers: getAuthHeaders(),
+    });
+    if (Array.isArray(data) && data.length > 0) return data;
     return [
       { id: 'log-1', event: 'login_success', username: 'amazonshopping14264@gmail.com', ip: '127.0.0.1', userAgent: 'Chrome/Admin', timestamp: new Date().toISOString(), details: 'Admin logged into newsroom control panel' }
     ];
@@ -1056,10 +1011,10 @@ export const api = {
 
   async revokeAllSessions(): Promise<{ success: boolean; message: string; token?: string }> {
     try {
-      fetch(`${BASE_URL}/api/admin/revoke-all-sessions`, {
+      await safeJsonFetch(`${BASE_URL}/api/admin/revoke-all-sessions`, {
         method: 'POST',
         headers: getAuthHeaders(),
-      }).catch(() => {});
+      });
     } catch {}
     const freshToken = `png_sec_${Date.now()}_fresh`;
     localStorage.setItem('png_admin_token', freshToken);
@@ -1075,15 +1030,13 @@ export const api = {
   },
 
   async getAdminUsers(): Promise<AdminUser[]> {
-    try {
-      const res = await fetch(`${BASE_URL}/api/admin/users`);
-      if (res.ok) return await res.json();
-    } catch {}
+    const data = await safeJsonFetch<AdminUser[]>(`${BASE_URL}/api/admin/users`);
+    if (Array.isArray(data) && data.length > 0) return data;
     return [
       {
         id: 'adm-owner-1',
-        username: 'alamin11gtN',
-        email: 'alamin11gtN@primenewsgraph.com',
+        username: 'amazonshopping14264@gmail.com',
+        email: 'amazonshopping14264@gmail.com',
         role: 'super_admin',
         two_factor_enabled: true,
         last_login: new Date().toISOString()
@@ -1094,11 +1047,11 @@ export const api = {
   // Backup & Import
   async importBackup(data: DatabaseState): Promise<{ success: boolean; message: string }> {
     try {
-      fetch(`${BASE_URL}/api/backup/import`, {
+      await safeJsonFetch(`${BASE_URL}/api/backup/import`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
-      }).catch(() => {});
+      });
     } catch {}
     saveLocalState(data);
     return { success: true, message: 'Database successfully restored.' };

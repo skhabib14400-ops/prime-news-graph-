@@ -29,12 +29,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         >
           <div>
             {/* Primary Visual */}
-            <div className="relative aspect-video w-full overflow-hidden rounded bg-slate-900 shadow-sm">
+            <div className="relative aspect-video w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800 shadow-sm">
               <img
-                src={normalizeImageUrl(leadStory.featured_image)}
+                src={normalizeImageUrl(leadStory.featured_image, leadStory.title_bn, leadStory.category_slug)}
                 alt={lang === 'bn' ? leadStory.title_bn : leadStory.title_en}
                 onError={handleImageError}
-                loading="eager"
+                loading="lazy"
                 referrerPolicy="no-referrer"
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
@@ -87,9 +87,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             >
               <div className="flex gap-4">
                 {/* Secondary Thumbnail */}
-                <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded bg-slate-900 sm:h-28 sm:w-40">
+                <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded bg-slate-100 dark:bg-slate-800 sm:h-28 sm:w-40">
                   <img
-                    src={normalizeImageUrl(article.featured_image)}
+                    src={normalizeImageUrl(article.featured_image, article.title_bn, article.category_slug)}
                     alt={lang === 'bn' ? article.title_bn : article.title_en}
                     onError={handleImageError}
                     loading="lazy"

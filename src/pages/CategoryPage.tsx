@@ -92,7 +92,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
                   <div>
                     <div className="aspect-video w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800 mb-3">
                       <img
-                        src={normalizeImageUrl(article.featured_image)}
+                        src={normalizeImageUrl(article.featured_image, article.title_bn, article.category_slug)}
                         alt={lang === 'bn' ? article.title_bn : article.title_en}
                         onError={handleImageError}
                         loading="lazy"

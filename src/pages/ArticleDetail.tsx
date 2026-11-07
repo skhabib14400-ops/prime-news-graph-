@@ -195,6 +195,10 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
               <img
                 src={article.author_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
                 alt={article.author_name}
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+                }}
                 className="h-10 w-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
               />
               <div>
@@ -302,9 +306,10 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
           {/* Featured Image */}
           <div className="my-6 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
             <img
-              src={normalizeImageUrl(article.featured_image)}
+              src={normalizeImageUrl(article.featured_image, article.title_bn, article.category_slug)}
               alt={title}
               onError={handleImageError}
+              loading="lazy"
               referrerPolicy="no-referrer"
               className="w-full max-h-[500px] object-cover"
             />
@@ -495,9 +500,10 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
                   >
                     <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                       <img
-                        src={normalizeImageUrl(rel.featured_image)}
+                        src={normalizeImageUrl(rel.featured_image, rel.title_bn, rel.category_slug)}
                         alt={lang === 'bn' ? rel.title_bn : rel.title_en}
                         onError={handleImageError}
+                        loading="lazy"
                         referrerPolicy="no-referrer"
                         className="h-full w-full object-cover"
                       />

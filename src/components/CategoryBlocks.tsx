@@ -60,7 +60,7 @@ export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
               >
                 <div className="relative aspect-video w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                   <img
-                    src={normalizeImageUrl(leadStory.featured_image)}
+                    src={normalizeImageUrl(leadStory.featured_image, leadStory.title_bn, leadStory.category_slug)}
                     alt={lang === 'bn' ? leadStory.title_bn : leadStory.title_en}
                     onError={handleImageError}
                     loading="lazy"
@@ -89,7 +89,7 @@ export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
                   >
                     <div className="relative h-18 w-24 shrink-0 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                       <img
-                        src={normalizeImageUrl(story.featured_image)}
+                        src={normalizeImageUrl(story.featured_image, story.title_bn, story.category_slug)}
                         alt={lang === 'bn' ? story.title_bn : story.title_en}
                         onError={handleImageError}
                         loading="lazy"

@@ -95,9 +95,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               >
                 <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                   <img
-                    src={normalizeImageUrl(article.featured_image)}
+                    src={normalizeImageUrl(article.featured_image, article.title_bn, article.category_slug)}
                     alt={lang === 'bn' ? article.title_bn : article.title_en}
                     onError={handleImageError}
+                    loading="lazy"
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover"
                   />

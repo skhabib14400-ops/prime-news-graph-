@@ -36,6 +36,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ videos }) => {
             <img
               src={`https://img.youtube.com/vi/${featured.youtube_id}/hqdefault.jpg`}
               alt={lang === 'bn' ? featured.title_bn : featured.title_en}
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.src = '/assets/images/news_world_summit_1793801922828.jpg';
+              }}
               className="h-full w-full object-cover opacity-80 transition-transform duration-500 group-hover:scale-105 group-hover:opacity-95"
             />
           </div>
@@ -66,6 +70,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ videos }) => {
                 <img
                   src={`https://img.youtube.com/vi/${vid.youtube_id}/mqdefault.jpg`}
                   alt={lang === 'bn' ? vid.title_bn : vid.title_en}
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = '/assets/images/news_tech_ai_chip_1793801922448.jpg';
+                  }}
                   className="h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
