@@ -352,18 +352,18 @@ export function NewsPortalApp() {
         </div>
       )}
 
-      {/* 6. Sticky Mobile Bottom Adsterra Banner (Section 8: Mobile Banner 320x50) */}
+      {/* 6. Sticky Mobile Bottom Adsterra Banner (Section 8: Mobile Banner 320x50 / Scaled 728x90) */}
       {!mobileBannerDismissed && mobileBannerAd && mobileBannerAd.is_active && (
-        <div className="fixed bottom-0 inset-x-0 z-40 block md:hidden bg-slate-900 border-t border-slate-700 shadow-xl">
-          <div className="relative max-w-md mx-auto">
+        <div className="fixed bottom-0 inset-x-0 z-40 block md:hidden bg-slate-900/95 backdrop-blur-sm border-t border-slate-700 shadow-2xl py-1 px-2">
+          <div className="relative w-full max-w-full flex items-center justify-center">
             <button
               onClick={() => setMobileBannerDismissed(true)}
-              className="absolute -top-6 right-2 bg-slate-800 text-white rounded-t px-2 py-0.5 text-[10px] font-bold border-t border-x border-slate-700"
+              className="absolute -top-7 right-1 bg-slate-800 text-white rounded-t px-2 py-0.5 text-[10px] font-bold border-t border-x border-slate-700 shadow"
               title="Close Ad"
             >
               ✕ Close
             </button>
-            <AdPlacement slot={mobileBannerAd} className="my-0" />
+            <AdPlacement slot={mobileBannerAd} className="my-0 w-full" />
           </div>
         </div>
       )}

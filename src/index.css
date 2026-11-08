@@ -61,3 +61,21 @@
     max-width: 100% !important;
   }
 }
+
+/* Mobile Touch & Zoom Normalization: Prevent accidental pinch/double-tap zoom on mobile, allow normal desktop zoom */
+@media (max-width: 1024px) {
+  html, body {
+    touch-action: pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
+}
+
+/* Ensure no elements cause horizontal scrolling on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}

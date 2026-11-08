@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AdSlot } from '../types/news';
 import { api } from '../services/api';
 import { ExternalLink } from 'lucide-react';
@@ -12,6 +12,8 @@ interface AdPlacementProps {
 export const AdPlacement: React.FC<AdPlacementProps> = ({ slot, className = '', fallbackText }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState<number>(1);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
 
   useEffect(() => {
     if (slot && slot.is_active) {
@@ -59,6 +61,51 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ slot, className = '', 
   };
 
   const dimensions = getDimensions();
+  const targetWidth = typeof dimensions.width === 'number' ? dimensions.width : 728;
+  const targetHeight = typeof dimensions.height === 'number' ? dimensions.height : 90;
+
+  // Responsive scaling measurement: Prevents 728px banners from clipping on mobile screens
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const measureAndScale = () => {
+      if (!containerRef.current) return;
+      // Get available client width with 8px buffer
+      const measured = containerRef.current.clientWidth || window.innerWidth;
+      const safeAvailable = Math.max(0, measured - 8);
+      setContainerWidth(safeAvailable);
+
+      if (safeAvailable > 0 && targetWidth > 0) {
+        if (safeAvailable < targetWidth) {
+          // Scale down so entire ad is 100% visible on small mobile screens
+          const calculatedScale = Math.min(1, Math.max(0.2, safeAvailable / targetWidth));
+          setScale(calculatedScale);
+        } else {
+          setScale(1);
+        }
+      }
+    };
+
+    measureAndScale();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        measureAndScale();
+      });
+      resizeObserver.observe(el);
+    }
+
+    window.addEventListener('resize', measureAndScale);
+    window.addEventListener('orientationchange', measureAndScale);
+
+    return () => {
+      window.removeEventListener('resize', measureAndScale);
+      window.removeEventListener('orientationchange', measureAndScale);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
+  }, [targetWidth]);
 
   // Dynamically populate iframe to execute third-party ad scripts safely
   useEffect(() => {
@@ -74,7 +121,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ slot, className = '', 
           <html lang="en">
             <head>
               <meta charset="utf-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
               <base target="_blank" />
               <style>
                 * { box-sizing: border-box; }
@@ -90,7 +137,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ slot, className = '', 
                   justify-content: center;
                   font-family: system-ui, -apple-system, sans-serif;
                 }
-                iframe { border: none !important; }
+                iframe { border: none !important; max-width: 100% !important; }
               </style>
             </head>
             <body>
@@ -123,9 +170,14 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ slot, className = '', 
 
   const targetLink = slot.banner_target_link || (isDirectLink ? slot.ad_code.trim() : '');
 
+  // Computed scaled bounding box
+  const scaledWidth = Math.round(targetWidth * scale);
+  const scaledHeight = Math.round(targetHeight * scale);
+
   return (
     <aside
-      className={`ad-placement my-4 overflow-hidden text-center ${visibilityClass} ${className}`}
+      ref={containerRef}
+      className={`ad-placement my-3 w-full overflow-hidden text-center flex flex-col items-center justify-center ${visibilityClass} ${className}`}
       aria-label="Advertisement"
       onClick={handleClick}
     >
@@ -133,7 +185,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ slot, className = '', 
         SPONSORED
       </div>
 
-      <div className="flex justify-center items-center w-full overflow-hidden">
+      <div className="flex justify-center items-center w-full max-w-full overflow-hidden">
         {isDirectLink ? (
           <a
             href={targetLink}
@@ -156,31 +208,43 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ slot, className = '', 
           </a>
         ) : isScriptAd ? (
           <div
-            className="flex items-center justify-center max-w-full overflow-hidden rounded bg-transparent"
+            className="flex items-center justify-center overflow-hidden mx-auto transition-all duration-150"
             style={{
-              width: typeof dimensions.width === 'number' ? `${dimensions.width}px` : dimensions.width,
-              minHeight: typeof dimensions.height === 'number' ? `${dimensions.height}px` : dimensions.height,
+              width: `${scaledWidth}px`,
+              height: `${scaledHeight}px`,
+              maxWidth: '100%',
+              position: 'relative',
             }}
           >
-            <iframe
-              ref={iframeRef}
-              title={`adsterra-ad-${slot.id}`}
-              scrolling="no"
-              frameBorder="0"
+            <div
               style={{
-                width: typeof dimensions.width === 'number' ? `${dimensions.width}px` : dimensions.width,
-                height: typeof dimensions.height === 'number' ? `${dimensions.height}px` : dimensions.height,
-                maxWidth: '100%',
-                border: 'none',
-                overflow: 'hidden',
-                display: 'block',
+                width: `${targetWidth}px`,
+                height: `${targetHeight}px`,
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0,
               }}
-              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
-            />
+            >
+              <iframe
+                ref={iframeRef}
+                title={`adsterra-ad-${slot.id}`}
+                scrolling="no"
+                frameBorder="0"
+                style={{
+                  width: `${targetWidth}px`,
+                  height: `${targetHeight}px`,
+                  border: 'none',
+                  overflow: 'hidden',
+                  display: 'block',
+                }}
+                sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+              />
+            </div>
           </div>
         ) : (
           <div
-            ref={containerRef}
             className="inline-block max-w-full overflow-hidden"
             dangerouslySetInnerHTML={{
               __html:

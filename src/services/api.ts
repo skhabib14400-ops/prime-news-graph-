@@ -4,7 +4,7 @@ import { DEFAULT_DATABASE_STATE } from '../data/fallbackData';
 const BASE_URL = '';
 
 // Local state cache in browser memory and localStorage
-const STORAGE_KEY = 'png_local_db_cache_v7';
+const STORAGE_KEY = 'png_local_db_cache_v8';
 
 function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
   if (!state) return state;
@@ -50,7 +50,7 @@ function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
 
 // Clean up legacy caches with broken /src/ paths once
 try {
-  ['png_local_db_cache_v1', 'png_local_db_cache_v2', 'png_local_db_cache_v3', 'png_local_db_cache_v4', 'png_local_db_cache_v5', 'png_local_db_cache_v6'].forEach(k => {
+  ['png_local_db_cache_v1', 'png_local_db_cache_v2', 'png_local_db_cache_v3', 'png_local_db_cache_v4', 'png_local_db_cache_v5', 'png_local_db_cache_v6', 'png_local_db_cache_v7'].forEach(k => {
     if (localStorage.getItem(k)) localStorage.removeItem(k);
   });
 } catch {}

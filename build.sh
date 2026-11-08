@@ -53,5 +53,10 @@ fi
 # Ensure uploads directory is present in dist
 mkdir -p dist/uploads
 
+# Remove heavy user screenrecordings/videos from dist to keep package well under 15MB
+rm -rf dist/assets/aistudio
+rm -f dist/*.mp4 dist/**/*.mp4 2>/dev/null || true
+rm -f dist/*.zip dist/**/*.zip 2>/dev/null || true
+
 echo "✅ [PRIME NEWS GRAPH] Production build finished successfully!"
 echo "📦 Output directory 'dist' is ready for Netlify deployment."
