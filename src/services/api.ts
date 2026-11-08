@@ -411,28 +411,6 @@ export const api = {
   },
 
   async saveAd(ad: Partial<AdSlot>): Promise<AdSlot> {
-    try {
-      const isNew = !ad.id;
-      const url = isNew ? `${BASE_URL}/api/ads` : `${BASE_URL}/api/ads/${ad.id}`;
-      const method = isNew ? 'POST' : 'PUT';
-
-      const res = await fetch(url, {
-        method,
-        headers: getAuthHeaders(),
-        body: JSON.stringify(ad),
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        const state = getLocalState();
-        if (isNew) state.ads = [...(state.ads || []), saved];
-        else state.ads = (state.ads || []).map(a => a.id === saved.id ? saved : a);
-        saveLocalState(state);
-        return saved;
-      }
-    } catch {
-      // Fall through
-    }
-
     const state = getLocalState();
     const id = ad.id || `ad_${Date.now()}`;
     const saved = { ...ad, id } as AdSlot;
@@ -440,6 +418,15 @@ export const api = {
     if (existingIdx >= 0) state.ads[existingIdx] = saved;
     else state.ads = [...(state.ads || []), saved];
     saveLocalState(state);
+    notifyDataUpdated({ type: 'ad', data: saved });
+
+    // Background server sync if available
+    safeJsonFetch(`${BASE_URL}/api/ads`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(ad),
+    }).catch(() => {});
+
     return saved;
   },
 
@@ -508,42 +495,44 @@ export const api = {
   },
 
   async saveAuthor(author: Partial<Author>): Promise<Author> {
-    try {
-      const saved = await safeJsonFetch<Author>(`${BASE_URL}/api/authors`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(author),
-      });
-      if (saved && saved.id) {
-        const state = getLocalState();
-        const existingIdx = (state.authors || []).findIndex(a => a.id === saved.id);
-        if (existingIdx >= 0) state.authors[existingIdx] = saved;
-        else state.authors = [...(state.authors || []), saved];
-        saveLocalState(state);
-        notifyDataUpdated({ type: 'author', data: saved });
-        return saved;
-      }
-    } catch {}
-
     const state = getLocalState();
     const id = author.id || `auth-${Date.now()}`;
-    const saved = { ...author, id } as Author;
+    const saved: Author = {
+      id,
+      name: author.name || 'লেখক',
+      role: author.role || 'Special Correspondent',
+      email: author.email || '',
+      avatar: author.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      bio_bn: author.bio_bn || '',
+      bio_en: author.bio_en || '',
+      social_twitter: author.social_twitter || '',
+      social_facebook: author.social_facebook || '',
+      ...author,
+    };
     const existingIdx = (state.authors || []).findIndex(a => a.id === id);
     if (existingIdx >= 0) state.authors[existingIdx] = saved;
     else state.authors = [...(state.authors || []), saved];
     saveLocalState(state);
     notifyDataUpdated({ type: 'author', data: saved });
+
+    // Non-blocking server background sync
+    safeJsonFetch<Author>(`${BASE_URL}/api/authors`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(author),
+    }).catch(() => {});
+
     return saved;
   },
 
   async deleteAuthor(id: string): Promise<{ success: boolean }> {
-    try {
-      await safeJsonFetch(`${BASE_URL}/api/authors/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-    } catch {}
     const state = getLocalState();
     state.authors = (state.authors || []).filter(a => a.id !== id);
     saveLocalState(state);
     notifyDataUpdated({ type: 'author_deleted', id });
+
+    safeJsonFetch(`${BASE_URL}/api/authors/${id}`, { method: 'DELETE', headers: getAuthHeaders() }).catch(() => {});
+
     return { success: true };
   },
 
@@ -662,25 +651,17 @@ export const api = {
   },
 
   async updateSettings(settings: Partial<WebsiteSettings>): Promise<WebsiteSettings> {
-    try {
-      const saved = await safeJsonFetch<WebsiteSettings>(`${BASE_URL}/api/settings`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(settings),
-      });
-      if (saved && saved.site_name) {
-        const state = getLocalState();
-        state.settings = saved;
-        saveLocalState(state);
-        notifyDataUpdated({ type: 'settings', data: saved });
-        return saved;
-      }
-    } catch {}
-
     const state = getLocalState();
     state.settings = { ...(state.settings || (DEFAULT_DATABASE_STATE.settings as any)), ...settings } as any;
     saveLocalState(state);
     notifyDataUpdated({ type: 'settings', data: state.settings });
+
+    safeJsonFetch<WebsiteSettings>(`${BASE_URL}/api/settings`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(settings),
+    }).catch(() => {});
+
     return state.settings;
   },
 

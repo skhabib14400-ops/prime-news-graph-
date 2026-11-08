@@ -56,7 +56,7 @@ import {
   DatabaseState
 } from '../types/news';
 import { api } from '../services/api';
-import { normalizeImageUrl, handleImageError, PRESET_NEWS_IMAGES, DEFAULT_FALLBACK_IMAGE } from '../utils/imageHelper';
+import { normalizeImageUrl, handleImageError, PRESET_NEWS_IMAGES, DEFAULT_FALLBACK_IMAGE, compressImage } from '../utils/imageHelper';
 import { AdPlacement } from '../components/AdPlacement';
 
 interface AdminDashboardProps {
@@ -582,7 +582,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCategory || !editingCategory.name_bn || !editingCategory.slug) return;
-    await api.saveCategory(editingCategory);
+    const saved = await api.saveCategory(editingCategory);
+    setCategories(prev => {
+      const idx = prev.findIndex(c => c.id === saved.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = saved;
+        return copy;
+      }
+      return [...prev, saved];
+    });
     showToast('Category saved.');
     setEditingCategory(null);
     loadAllData();
@@ -592,6 +601,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleDeleteCategory = async (id: string) => {
     if (confirm('Delete this category?')) {
       await api.deleteCategory(id);
+      setCategories(prev => prev.filter(c => c.id !== id));
       showToast('Category removed.');
       loadAllData();
       onRefreshData();
@@ -602,7 +612,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleSaveBreaking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingBreaking || !editingBreaking.title_bn) return;
-    await api.saveBreakingNews(editingBreaking);
+    const saved = await api.saveBreakingNews(editingBreaking);
+    setBreakingNews(prev => {
+      const idx = prev.findIndex(b => b.id === saved.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = saved;
+        return copy;
+      }
+      return [saved, ...prev];
+    });
     showToast('Breaking news headline updated.');
     setEditingBreaking(null);
     loadAllData();
@@ -612,6 +631,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleDeleteBreaking = async (id: string) => {
     if (confirm('Delete this breaking headline?')) {
       await api.deleteBreakingNews(id);
+      setBreakingNews(prev => prev.filter(b => b.id !== id));
       showToast('Breaking news deleted.');
       loadAllData();
       onRefreshData();
@@ -622,7 +642,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleSaveAd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAd) return;
-    await api.saveAd(editingAd);
+    const saved = await api.saveAd(editingAd);
+    setAds(prev => {
+      const idx = prev.findIndex(a => a.id === saved.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = saved;
+        return copy;
+      }
+      return [...prev, saved];
+    });
     showToast(`Ad slot "${editingAd.name}" updated successfully.`);
     setEditingAd(null);
     loadAllData();
@@ -633,17 +662,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleSaveAuthor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAuthor || !editingAuthor.name) return;
-    await api.saveAuthor(editingAuthor);
-    showToast('Author profile saved.');
+    const saved = await api.saveAuthor(editingAuthor);
+    showToast('লেখক প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে!');
     setEditingAuthor(null);
+    setAuthors(prev => {
+      const idx = prev.findIndex(a => a.id === saved.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = saved;
+        return copy;
+      }
+      return [...prev, saved];
+    });
     loadAllData();
     onRefreshData();
   };
 
   const handleDeleteAuthor = async (id: string) => {
-    if (confirm('Delete author profile?')) {
+    if (confirm('এই লেখকের প্রোফাইল মুছে ফেলতে চান?')) {
       await api.deleteAuthor(id);
-      showToast('Author deleted.');
+      showToast('লেখক প্রোফাইল মুছে ফেলা হয়েছে।');
+      setAuthors(prev => prev.filter(a => a.id !== id));
       loadAllData();
       onRefreshData();
     }
@@ -653,7 +692,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleSaveVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingVideo || !editingVideo.title_bn || !editingVideo.youtube_id) return;
-    await api.saveVideo(editingVideo);
+    const saved = await api.saveVideo(editingVideo);
+    setVideos(prev => {
+      const idx = prev.findIndex(v => v.id === saved.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = saved;
+        return copy;
+      }
+      return [saved, ...prev];
+    });
     showToast('Video news updated.');
     setEditingVideo(null);
     loadAllData();
@@ -663,6 +711,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleDeleteVideo = async (id: string) => {
     if (confirm('Delete video item?')) {
       await api.deleteVideo(id);
+      setVideos(prev => prev.filter(v => v.id !== id));
       showToast('Video deleted.');
       loadAllData();
       onRefreshData();
@@ -672,6 +721,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   // --- Comments Actions ---
   const handleUpdateCommentStatus = async (id: string, status: 'approved' | 'pending' | 'spam') => {
     await api.updateCommentStatus(id, status);
+    setComments(prev => prev.map(c => c.id === id ? { ...c, status } : c));
     showToast(`Comment status set to ${status}.`);
     loadAllData();
     onRefreshData();
@@ -680,6 +730,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleDeleteComment = async (id: string) => {
     if (confirm('Delete comment?')) {
       await api.deleteComment(id);
+      setComments(prev => prev.filter(c => c.id !== id));
       showToast('Comment deleted.');
       loadAllData();
       onRefreshData();
@@ -690,6 +741,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleDeleteSubscriber = async (id: string) => {
     if (confirm('Unsubscribe this email?')) {
       await api.deleteSubscriber(id);
+      setSubscribers(prev => prev.filter(s => s.id !== id));
       showToast('Subscriber removed.');
       loadAllData();
       onRefreshData();
@@ -713,7 +765,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settings) return;
-    await api.updateSettings(settings);
+    const saved = await api.updateSettings(settings);
+    setSettings(saved);
     showToast('Website global settings updated.');
     loadAllData();
     onRefreshData();
@@ -2524,73 +2577,282 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
           {/* TAB 10: AUTHORS MANAGEMENT */}
           {activeTab === 'authors' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h2 className="text-2xl font-bold font-serif text-slate-900">Authors & Journalists Management</h2>
-                  <p className="text-xs text-slate-500">Manage correspondents, biographies, credentials, and social links.</p>
+                  <p className="text-xs text-slate-500">লেখক ও সাংবাদিকদের প্রোফাইল, মোবাইল গ্যালারি থেকে ছবি আপলোড, পরিচিতি ও ডেজিগনেশন পরিচালনা করুন।</p>
                 </div>
                 <button
-                  onClick={() => setEditingAuthor({ name: '', role: 'Special Correspondent', email: '', bio_bn: '' })}
-                  className="flex items-center gap-2 bg-[#246BFD] hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold"
+                  onClick={() => setEditingAuthor({
+                    name: '',
+                    role: 'Special Correspondent',
+                    email: '',
+                    bio_bn: '',
+                    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
+                  })}
+                  className="flex items-center gap-2 bg-[#246BFD] hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto"
                 >
                   <PlusCircle className="h-4 w-4" />
-                  <span>Add Author</span>
+                  <span>Add Author (নতুন লেখক যুক্ত করুন)</span>
                 </button>
               </div>
 
               {editingAuthor && (
-                <form onSubmit={handleSaveAuthor} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                  <h3 className="font-bold text-sm text-slate-900">Author Profile</h3>
+                <form onSubmit={handleSaveAuthor} className="bg-white p-6 rounded-2xl border border-blue-200 shadow-xl space-y-5">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <div>
+                      <h3 className="font-bold text-base text-slate-900">
+                        {editingAuthor.id ? 'লেখক / সাংবাদিক প্রোফাইল সম্পাদনা' : 'নতুন লেখক / সাংবাদিক যোগ করুন'}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        মোবাইল গ্যালারি থেকে সরাসরি ছবি আপলোড করুন এবং তথ্য পূরণ করুন।
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAuthor(null)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Author Photo / Avatar Section with Mobile Gallery Upload */}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center gap-5">
+                    {/* Avatar Circular Preview */}
+                    <div className="relative group shrink-0">
+                      <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-blue-500 shadow-md bg-white flex items-center justify-center">
+                        {editingAuthor.avatar ? (
+                          <img
+                            src={editingAuthor.avatar}
+                            alt={editingAuthor.name || 'Author'}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-slate-400">
+                            <Users className="h-8 w-8" />
+                            <span className="text-[9px] mt-1">ছবি নেই</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <label
+                        htmlFor="author-avatar-upload"
+                        className="absolute bottom-0 right-0 bg-[#246BFD] hover:bg-blue-600 text-white p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-105"
+                        title="গ্যালারি থেকে ছবি নির্বাচন করুন"
+                      >
+                        <Camera className="h-4 w-4" />
+                        <input
+                          id="author-avatar-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              const compressed = await compressImage(file, 400, 400, 0.85);
+                              setEditingAuthor({ ...editingAuthor, avatar: compressed });
+                              showToast('গ্যালারি থেকে ছবি সফলভাবে যুক্ত হয়েছে!');
+                            } catch (err) {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setEditingAuthor({ ...editingAuthor, avatar: reader.result as string });
+                                showToast('ছবি যুক্ত হয়েছে!');
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex-1 space-y-2.5 text-center sm:text-left w-full">
+                      <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                        <label
+                          htmlFor="author-avatar-upload-btn"
+                          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#246BFD] hover:bg-blue-600 text-white text-xs font-bold cursor-pointer shadow-xs transition-colors"
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>মোবাইল গ্যালারি থেকে ছবি আপলোড</span>
+                          <input
+                            id="author-avatar-upload-btn"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                const compressed = await compressImage(file, 400, 400, 0.85);
+                                setEditingAuthor({ ...editingAuthor, avatar: compressed });
+                                showToast('গ্যালারি থেকে ছবি সফলভাবে যুক্ত হয়েছে!');
+                              } catch (err) {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  setEditingAuthor({ ...editingAuthor, avatar: reader.result as string });
+                                  showToast('ছবি যুক্ত হয়েছে!');
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+
+                        {editingAuthor.avatar && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingAuthor({ ...editingAuthor, avatar: '' })}
+                            className="px-2.5 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium"
+                          >
+                            ছবি মুছুন
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="url"
+                          placeholder="অথবা ছবির সরাসরি লিঙ্ক (URL) পেস্ট করুন..."
+                          value={editingAuthor.avatar || ''}
+                          onChange={(e) => setEditingAuthor({ ...editingAuthor, avatar: e.target.value })}
+                          className="w-full rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-800 bg-white"
+                        />
+                      </div>
+
+                      {/* Preset avatar suggestions */}
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5 justify-center sm:justify-start">
+                        <span className="text-[11px] text-slate-500 font-medium">প্রিসেট অবতার:</span>
+                        {[
+                          { label: 'পুরুষ প্রতিবেদক ১', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80' },
+                          { label: 'পুরুষ প্রতিবেদক ২', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80' },
+                          { label: 'নারী প্রতিবেদক', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80' },
+                          { label: 'ক্রীড়া প্রতিবেদক', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80' }
+                        ].map((preset, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setEditingAuthor({ ...editingAuthor, avatar: preset.url })}
+                            className="text-[10px] px-2 py-0.5 rounded bg-white hover:bg-blue-50 border border-slate-200 text-slate-700"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <input
-                      type="text"
-                      placeholder="Author Name"
-                      required
-                      value={editingAuthor.name || ''}
-                      onChange={e => setEditingAuthor({ ...editingAuthor, name: e.target.value })}
-                      className="rounded border border-slate-300 p-2 text-xs"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Role (e.g. Senior Political Analyst)"
-                      value={editingAuthor.role || ''}
-                      onChange={e => setEditingAuthor({ ...editingAuthor, role: e.target.value })}
-                      className="rounded border border-slate-300 p-2 text-xs"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={editingAuthor.email || ''}
-                      onChange={e => setEditingAuthor({ ...editingAuthor, email: e.target.value })}
-                      className="rounded border border-slate-300 p-2 text-xs"
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        লেখকের নাম (Author Name) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: রফিকুল ইসলাম (Rafiqul Islam)"
+                        required
+                        value={editingAuthor.name || ''}
+                        onChange={e => setEditingAuthor({ ...editingAuthor, name: e.target.value })}
+                        className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-blue-500 bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        পদবী / ভূমিকা (Role)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: Special Correspondent / প্রধান প্রতিবেদক"
+                        value={editingAuthor.role || ''}
+                        onChange={e => setEditingAuthor({ ...editingAuthor, role: e.target.value })}
+                        className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-blue-500 bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        ইমেইল (Email)
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="author@primenewsgraph.com"
+                        value={editingAuthor.email || ''}
+                        onChange={e => setEditingAuthor({ ...editingAuthor, email: e.target.value })}
+                        className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-blue-500 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      পরিচিতি / বায়োগ্রাফি (Bio)
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="লেখকের সাংবাদিকতার অভিজ্ঞতা বা সংক্ষিপ্ত পরিচিতি লিখুন..."
+                      value={editingAuthor.bio_bn || ''}
+                      onChange={e => setEditingAuthor({ ...editingAuthor, bio_bn: e.target.value })}
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-blue-500 bg-white"
                     />
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <button type="button" onClick={() => setEditingAuthor(null)} className="px-3 py-1.5 border rounded text-xs">Cancel</button>
-                    <button type="submit" className="px-4 py-1.5 bg-[#246BFD] text-white text-xs font-bold rounded">Save Author</button>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t">
+                    <button
+                      type="button"
+                      onClick={() => setEditingAuthor(null)}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#246BFD] hover:bg-blue-600 text-white text-xs font-bold rounded-lg shadow-xs"
+                    >
+                      লেখক সংরক্ষণ করুন
+                    </button>
                   </div>
                 </form>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {authors.map(a => (
-                  <div key={a.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs text-center flex flex-col justify-between">
+                  <div key={a.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs text-center flex flex-col justify-between hover:border-blue-300 transition-colors">
                     <div>
-                      <img src={a.avatar} alt="" loading="lazy" className="h-16 w-16 rounded-full mx-auto object-cover border border-slate-200 mb-3" />
+                      <img
+                        src={a.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                        alt={a.name}
+                        loading="lazy"
+                        className="h-16 w-16 rounded-full mx-auto object-cover border-2 border-slate-200 mb-3 shadow-2xs"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+                        }}
+                      />
                       <h4 className="text-sm font-bold text-slate-900">{a.name}</h4>
-                      <p className="text-xs text-[#246BFD] font-medium">{a.role}</p>
-                      <p className="mt-2 text-[11px] text-slate-500 line-clamp-2">{a.bio_bn}</p>
+                      <p className="text-xs text-[#246BFD] font-medium mt-0.5">{a.role}</p>
+                      <p className="mt-2 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{a.bio_bn || 'প্রাইম নিউজ গ্রাফের নিয়মিত সাংবাদিক ও লেখক।'}</p>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex justify-center gap-2">
-                      <button onClick={() => setEditingAuthor(a)} className="text-xs text-blue-600 font-semibold hover:underline">Edit</button>
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex justify-center items-center gap-3">
+                      <button
+                        onClick={() => setEditingAuthor(a)}
+                        className="text-xs text-blue-600 font-bold hover:underline"
+                      >
+                        এডিট
+                      </button>
                       <span className="text-slate-300">·</span>
-                      <button onClick={() => handleDeleteAuthor(a.id)} className="text-xs text-red-600 font-semibold hover:underline">Delete</button>
+                      <button
+                        onClick={() => handleDeleteAuthor(a.id)}
+                        className="text-xs text-red-600 font-bold hover:underline"
+                      >
+                        ডিলিট
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
 
           {/* TAB 11: COMMENTS MODERATION */}
           {activeTab === 'comments' && (
