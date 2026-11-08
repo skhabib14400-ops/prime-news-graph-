@@ -58,7 +58,7 @@ export interface BreakingNewsItem {
 export interface AdSlot {
   id: string;
   name: string;
-  format: 'banner' | 'popunder' | 'social_bar' | 'native';
+  format: 'banner' | 'popunder' | 'social_bar' | 'native' | 'direct_link';
   ad_code: string;
   banner_image_url?: string;
   banner_target_link?: string;

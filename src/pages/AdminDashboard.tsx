@@ -57,6 +57,7 @@ import {
 } from '../types/news';
 import { api } from '../services/api';
 import { normalizeImageUrl, handleImageError, PRESET_NEWS_IMAGES, DEFAULT_FALLBACK_IMAGE } from '../utils/imageHelper';
+import { AdPlacement } from '../components/AdPlacement';
 
 interface AdminDashboardProps {
   onBackToSite: () => void;
@@ -2070,81 +2071,249 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
           {/* TAB 7: ADSTERRA ADVERTISEMENT MANAGEMENT */}
           {activeTab === 'advertisements' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 rounded-xl shadow-md">
                 <div>
-                  <h2 className="text-2xl font-bold font-serif text-slate-900">Adsterra Ads Management Center</h2>
-                  <p className="text-xs text-slate-500">Configure script codes, banner HTML, impressions tracking, and device targets across 11 slots.</p>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500 text-white uppercase tracking-wider">
+                      Adsterra 100% Verified
+                    </span>
+                    <span className="text-xs text-blue-200">১২টি বিজ্ঞাপন স্লট সক্রিয়</span>
+                  </div>
+                  <h2 className="text-2xl font-bold font-serif mt-1">Adsterra Ads Management & Placement Hub</h2>
+                  <p className="text-xs text-blue-100/90 mt-1">
+                    আপনার দেওয়া সকল Adsterra Ads (৭২৮x৯০, ৩০০x২৫০, ৩২০x৫০, নেটিভ, পপআন্ডার, সোশ্যাল বার, ডাইরেক্ট লিঙ্ক) নির্দিষ্ট জায়গায় সেট করা আছে। নিচে যে কোনো স্লট এডিট বা পরিবর্তন করতে পারেন।
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="bg-white/10 px-3 py-2 rounded-lg border border-white/20 text-center">
+                    <div className="font-bold text-emerald-400">অটো স্ক্রিপ্ট রানার</div>
+                    <div className="text-[10px] text-blue-200">আইসোলেটেড আইফ্রেম কার্যকর</div>
+                  </div>
                 </div>
               </div>
 
               {/* Edit Modal / Form */}
               {editingAd && (
-                <form onSubmit={handleSaveAd} className="bg-white p-6 rounded-xl border border-slate-300 shadow-lg space-y-4">
+                <form onSubmit={handleSaveAd} className="bg-white p-6 rounded-xl border border-blue-200 shadow-xl space-y-5">
                   <div className="flex items-center justify-between border-b pb-3">
-                    <h3 className="font-bold text-base text-slate-900">Edit Ad Slot: {editingAd.name}</h3>
-                    <span className="font-mono text-xs text-slate-500">{editingAd.id}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                          {editingAd.id}
+                        </span>
+                        <h3 className="font-bold text-base text-slate-900">বিজ্ঞাপন স্লট এডিট: {editingAd.name}</h3>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {editingAd.id === 'header_banner' && '📍 সাইটের একেবারে উপরে হেডারে প্রদর্শিত হবে (৭২৮x৯০ বা ৩২০x৫০ মোবাইল)'}
+                        {editingAd.id === 'homepage_top' && '📍 হোমপেজের ব্রেকিং ও প্রধান খবরের ঠিক নিচে প্রদর্শিত হবে (৭২৮x৯০)'}
+                        {editingAd.id === 'between_news' && '📍 খবরের গ্রিড এবং তালিকার মাঝামাঝি অংশে বসবে (নেটিভ ৪:১ ব্যানার)'}
+                        {editingAd.id === 'sidebar_banner' && '📍 সাইডবারে ট্রেন্ডিং ও ক্যাটাগরির পাশে বসবে (৩০০x২৫০ মিডিয়াম রেকট্যাঙ্গেল)'}
+                        {editingAd.id === 'article_top' && '📍 নিউজের বিস্তারিত পৃষ্ঠার শুরুতে প্রদর্শিত হবে (৭২৮x৯০ / ৩০০x২৫০)'}
+                        {editingAd.id === 'article_middle' && '📍 খবরের আর্টিকেলের ৩য় অনুচ্ছেদের ঠিক পরে বসবে (৩০০x২৫০ বা নেটিভ)'}
+                        {editingAd.id === 'article_bottom' && '📍 খবরের লেখার শেষে ও কমেন্ট সেকশনের উপরে বসবে (৭২৮x৯০ / ৩০০x২৫০)'}
+                        {editingAd.id === 'footer_banner' && '📍 সাইটের ফুটারের ঠিক উপরে প্রদর্শিত হবে (৭২৮x৯০ ব্যানার)'}
+                        {editingAd.id === 'mobile_banner' && '📍 মোবাইল ডিভাইসে নিচের অংশে ফিক্সড থাকবে (৩২০x৫০ ব্যানার)'}
+                        {editingAd.id === 'popunder' && '📍 গ্লোবাল পপআন্ডার স্ক্রিপ্ট - ব্যবহারকারী সাইটে ক্লিক করলে নতুন ট্যাবে এড লোড হবে'}
+                        {editingAd.id === 'social_bar' && '📍 গ্লোবাল সোশ্যাল বার / পুশ নোটিফিকেশন এড - স্ক্রিনে ভেসে থাকবে'}
+                        {editingAd.id === 'direct_smartlink' && '📍 ডাইরেক্ট স্মার্টলিঙ্ক - ক্লিক করলে সরাসরি স্পনসর লিঙ্কে যাবে'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAd(null)}
+                      className="text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Status (স্ট্যাটাস)</label>
                       <select
                         value={editingAd.is_active ? 'active' : 'inactive'}
                         onChange={e => setEditingAd({ ...editingAd, is_active: e.target.value === 'active' })}
-                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                        className="w-full rounded border border-slate-300 p-2 text-xs bg-slate-50 focus:bg-white"
                       >
-                        <option value="active">Active & Displaying</option>
-                        <option value="inactive">Disabled</option>
+                        <option value="active">Active (সক্রিয় ও লাইভ)</option>
+                        <option value="inactive">Disabled (বন্ধ)</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Device Targeting</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Device Targeting (ডিভাইস)</label>
                       <select
                         value={editingAd.device_target}
                         onChange={e => setEditingAd({ ...editingAd, device_target: e.target.value as any })}
-                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                        className="w-full rounded border border-slate-300 p-2 text-xs bg-slate-50 focus:bg-white"
                       >
-                        <option value="all">All Devices (Desktop & Mobile)</option>
-                        <option value="desktop">Desktop Only</option>
-                        <option value="mobile">Mobile Devices Only</option>
+                        <option value="all">সকল ডিভাইসে দেখাবে (কম্পিউটার ও মোবাইল)</option>
+                        <option value="desktop">শুধু কম্পিউটার / ডেস্কটপে দেখাবে</option>
+                        <option value="mobile">শুধু মোবাইল ফোনে দেখাবে</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Ad Format</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Ad Format (বিজ্ঞাপনের ধরন)</label>
                       <select
                         value={editingAd.format}
                         onChange={e => setEditingAd({ ...editingAd, format: e.target.value as any })}
-                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                        className="w-full rounded border border-slate-300 p-2 text-xs bg-slate-50 focus:bg-white"
                       >
-                        <option value="banner">Display Banner</option>
-                        <option value="popunder">Popunder Script</option>
-                        <option value="social_bar">Social Bar Notification</option>
-                        <option value="native">Native In-Feed</option>
+                        <option value="banner">Display Banner (৭২৮x৯০ / ৩০০x২৫০ / ৩২০x৫০)</option>
+                        <option value="native">Native 4:1 In-Feed Banner</option>
+                        <option value="popunder">Popunder Script (পপআন্ডার)</option>
+                        <option value="social_bar">Social Bar (সোশ্যাল নোটিফিকেশন বার)</option>
+                        <option value="direct_link">Direct SmartLink (ডাইরেক্ট লিঙ্ক)</option>
                       </select>
+                    </div>
+                  </div>
+
+                  {/* 1-Click Adsterra Preset buttons */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Adsterra কুইক প্রিসেট কোড ইনসার্ট (এক ক্লিকেই কোড বসান):
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAd({
+                            ...editingAd,
+                            format: 'banner',
+                            ad_code: `<script>\n  atOptions = {\n    'key' : 'b4815a2fd87e3b5b988b1e480f060c36',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b4815a2fd87e3b5b988b1e480f060c36"></script>`
+                          });
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200"
+                      >
+                        + 728x90 ব্যানার
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAd({
+                            ...editingAd,
+                            format: 'banner',
+                            ad_code: `<script>\n  atOptions = {\n    'key' : 'b7d833859be47ccda4fccadb7f2154e8',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b7d833859be47ccda4fccadb7f2154e8"></script>`
+                          });
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded border border-indigo-200"
+                      >
+                        + 300x250 ব্যানার
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAd({
+                            ...editingAd,
+                            format: 'banner',
+                            ad_code: `<script>\n  atOptions = {\n    'key' : 'feaa78b521d61a9a46b260640dab7e68',\n    'format' : 'iframe',\n    'height' : 50,\n    'width' : 320,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/feaa78b521d61a9a46b260640dab7e68"></script>`
+                          });
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 rounded border border-purple-200"
+                      >
+                        + 320x50 মোবাইল ব্যানার
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAd({
+                            ...editingAd,
+                            format: 'native',
+                            ad_code: `<script async="async" data-cfasync="false" src="https://bicea.org/21/b62e49ee7287cc466d175832a73a3e12"></script>\n<div id="container-b62e49ee7287cc466d175832a73a3e12"></div>`
+                          });
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded border border-emerald-200"
+                      >
+                        + Native 4:1 কনটেইনার
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAd({
+                            ...editingAd,
+                            format: 'popunder',
+                            ad_code: `<script data-cfasync="false" src="https://afders.org/1/210e04c023065f4bd73f5a218a3af0ee"></script>`
+                          });
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 rounded border border-amber-200"
+                      >
+                        + Popunder স্ক্রিপ্ট
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAd({
+                            ...editingAd,
+                            format: 'social_bar',
+                            ad_code: `<script data-cfasync="false" src="https://bicea.org/14/046bfb413c6b955fc22060813fa0a79a"></script>`
+                          });
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-rose-50 text-rose-700 hover:bg-rose-100 rounded border border-rose-200"
+                      >
+                        + Social Bar স্ক্রিপ্ট
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAd({
+                            ...editingAd,
+                            format: 'direct_link',
+                            ad_code: `https://arwf.org/4/7291dca1d41ac3667bd2ac15006500fd`
+                          });
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded border border-cyan-200"
+                      >
+                        + Direct SmartLink লিঙ্ক
+                      </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Adsterra Script Code / Custom HTML
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">
+                        বিজ্ঞাপনের কোড বা স্ক্রিপ্ট (Adsterra Script Code / Custom HTML / Direct URL)
+                      </label>
+                      <span className="text-[10px] text-slate-500">
+                        স্ক্রিপ্ট ট্যাগ সহ সম্পূর্ণ কোড পেস্ট করুন
+                      </span>
+                    </div>
                     <textarea
                       rows={6}
                       value={editingAd.ad_code || ''}
                       onChange={e => setEditingAd({ ...editingAd, ad_code: e.target.value })}
-                      className="w-full rounded border border-slate-300 p-3 font-mono text-xs text-slate-800"
+                      className="w-full rounded border border-slate-300 p-3 font-mono text-xs text-slate-800 bg-slate-900 text-slate-100 leading-relaxed"
                       placeholder="<!-- Paste your Adsterra script tag or HTML banner code here -->"
                     />
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={() => setEditingAd(null)} className="px-4 py-2 border rounded text-xs">
-                      Cancel
+                  {/* Live Preview Box */}
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <Eye className="h-3.5 w-3.5 text-blue-600" />
+                        লাইভ প্রিভিউ (বিজ্ঞাপনটি যেভাবে সাইটে শো করবে)
+                      </span>
+                      <span className="text-[10px] text-slate-500">Adsterra Script Runner Active</span>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-dashed border-slate-300 min-h-[90px] flex items-center justify-center">
+                      <AdPlacement slot={editingAd} />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t">
+                    <button
+                      type="button"
+                      onClick={() => setEditingAd(null)}
+                      className="px-4 py-2 border border-slate-300 rounded text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      বাতিল
                     </button>
-                    <button type="submit" className="px-5 py-2 bg-[#246BFD] text-white text-xs font-bold rounded">
-                      Save Ad Configuration
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#246BFD] hover:bg-blue-600 text-white text-xs font-bold rounded shadow-xs"
+                    >
+                      সংরক্ষণ ও আপডেট করুন
                     </button>
                   </div>
                 </form>
@@ -2152,35 +2321,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
 
               {/* Ad Slots List */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ads.map(ad => (
-                  <div key={ad.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${ad.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                          {ad.is_active ? 'ACTIVE' : 'DISABLED'}
-                        </span>
-                        <span className="text-[10px] text-slate-400 uppercase font-mono">{ad.device_target}</span>
-                      </div>
-                      <h4 className="mt-2 text-sm font-bold text-slate-900">{ad.name}</h4>
-                      <div className="mt-1 font-mono text-[11px] text-slate-400">ID: {ad.id}</div>
-                    </div>
+                {ads.map(ad => {
+                  let locationGuide = '';
+                  if (ad.id === 'header_banner') locationGuide = 'হেডার (৭২৮x৯০ বা ৩২০x৫০)';
+                  else if (ad.id === 'homepage_top') locationGuide = 'হোমপেজ টপ (৭২৮x৯০)';
+                  else if (ad.id === 'between_news') locationGuide = 'খবরের মাঝে (নেটিভ ৪:১)';
+                  else if (ad.id === 'sidebar_banner') locationGuide = 'সাইডবার (৩০০x২৫০)';
+                  else if (ad.id === 'article_top') locationGuide = 'আর্টিকেল টপ (৭২৮x৯০)';
+                  else if (ad.id === 'article_middle') locationGuide = 'আর্টিকেল মিডিয়াম (৩০০x২৫০)';
+                  else if (ad.id === 'article_bottom') locationGuide = 'আর্টিকেল বটম (৭২৮x৯০)';
+                  else if (ad.id === 'footer_banner') locationGuide = 'ফুটার ব্যানার (৭২৮x৯০)';
+                  else if (ad.id === 'mobile_banner') locationGuide = 'মোবাইল ফ্লোটিং (৩২০x৫০)';
+                  else if (ad.id === 'popunder') locationGuide = 'পপআন্ডার স্ক্রিপ্ট';
+                  else if (ad.id === 'social_bar') locationGuide = 'সোশ্যাল পুশ বার';
+                  else if (ad.id === 'direct_smartlink') locationGuide = 'স্মার্টলিঙ্ক রিডাইরেক্ট';
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <div className="text-[11px] text-slate-500">
-                        <span className="font-bold text-slate-700 tabular-nums">{ad.impressions.toLocaleString()}</span> imp · <span className="font-bold text-slate-700 tabular-nums">{ad.clicks.toLocaleString()}</span> clicks
+                  return (
+                    <div key={ad.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs flex flex-col justify-between hover:border-blue-300 transition-colors">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${ad.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                            {ad.is_active ? 'ACTIVE (চালু)' : 'DISABLED (বন্ধ)'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase font-mono">
+                            {ad.device_target}
+                          </span>
+                        </div>
+                        <h4 className="mt-2 text-sm font-bold text-slate-900">{ad.name}</h4>
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-600 font-medium">
+                          <span>📍</span>
+                          <span>{locationGuide}</span>
+                        </div>
+                        <div className="mt-1 font-mono text-[11px] text-slate-400">ID: {ad.id}</div>
                       </div>
-                      <button
-                        onClick={() => setEditingAd(ad)}
-                        className="px-3 py-1 rounded bg-slate-100 hover:bg-[#246BFD] hover:text-white text-slate-700 text-xs font-semibold transition-colors"
-                      >
-                        Edit Code
-                      </button>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div className="text-[11px] text-slate-500">
+                          <span className="font-bold text-slate-700 tabular-nums">{ad.impressions.toLocaleString()}</span> ভিউ · <span className="font-bold text-slate-700 tabular-nums">{ad.clicks.toLocaleString()}</span> ক্লিক
+                        </div>
+                        <button
+                          onClick={() => setEditingAd(ad)}
+                          className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-[#246BFD] hover:text-white text-blue-700 text-xs font-bold transition-all shadow-2xs"
+                        >
+                          এডিট কোড
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
+
 
           {/* TAB 8: MEDIA LIBRARY */}
           {activeTab === 'media_library' && (
@@ -3165,25 +3357,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
 
                   <a
                     href="/prime-news-graph-full-deployment-package.zip"
-                    download="prime-news-graph-full-deployment-package.zip"
+                    download="prime-news-graph-github-vercel.zip"
                     className="flex flex-col justify-between p-4 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors group cursor-pointer"
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 rounded bg-slate-700 text-[10px] font-bold uppercase tracking-wider text-white">
-                          Full Source Code (সম্পূর্ণ সোর্স কোড)
+                        <span className="px-2 py-0.5 rounded bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-white">
+                          GitHub & Vercel Clean Package
                         </span>
                         <Download className="h-5 w-5 text-slate-700 transition-transform group-hover:scale-110" />
                       </div>
                       <h4 className="mt-2 text-sm font-bold text-slate-900">
-                        📂 prime-news-graph-full-deployment-package.zip
+                        📂 prime-news-graph-github-vercel.zip
                       </h4>
                       <p className="mt-1 text-xs text-slate-600">
-                        GitHub-এ আপলোড অথবা যেকোনো সার্ভারে ডিপ্লয় করার জন্য সমস্ত React, TypeScript, Netlify Functions ও কনফিগারেশন সোর্স কোড।
+                        Vercel ও GitHub এর জন্য ১০০% অপ্টিমাইজড ক্লিন সোর্স কোড (vercel.json সহ)। কোনো ভারী ফাইল বা node_modules নেই, ফলে GitHub এ "invalid argument" বা Vercel এ কোনো এরর আসবে না।
                       </p>
                     </div>
                     <div className="mt-3 text-xs font-bold text-slate-700 flex items-center gap-1">
-                      <span>সোর্স কোড জিপ ডাউনলোড করুন &rarr;</span>
+                      <span>GitHub & Vercel জিপ ডাউনলোড করুন &rarr;</span>
                     </div>
                   </a>
                 </div>

@@ -13,6 +13,7 @@ import { NewsletterSection } from './components/NewsletterSection';
 import { Footer } from './components/Footer';
 import { SearchModal } from './components/SearchModal';
 import { AdPlacement } from './components/AdPlacement';
+import { AdsterraGlobalController } from './components/AdsterraGlobalController';
 import { ArticleDetail } from './pages/ArticleDetail';
 import { CategoryPage } from './pages/CategoryPage';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -177,6 +178,9 @@ export function NewsPortalApp() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] dark:bg-[#0B132B] text-[#222222] dark:text-[#E2E8F0] flex flex-col font-sans transition-colors duration-200">
+      {/* Adsterra Global Controller: Popunder & Social Bar Push */}
+      <AdsterraGlobalController ads={ads} />
+
       {/* 1. Header */}
       <Header
         categories={categories}
