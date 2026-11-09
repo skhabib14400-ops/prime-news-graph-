@@ -344,33 +344,17 @@ const INITIAL_ADS: AdSlot[] = [
     id: 'header_banner',
     name: 'Header Top Leaderboard (728x90)',
     format: 'banner',
-    ad_code: `<!-- Adsterra 728x90 Header Leaderboard -->
-<div style="width:100%;max-width:728px;height:90px;margin:0 auto;background:linear-gradient(135deg,#0F172A,#1E293B);border:1px solid #334155;border-radius:6px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;color:#F8FAFC;box-sizing:border-box;font-family:sans-serif;">
-  <div>
-    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;">Sponsored Advertisement</div>
-    <div style="font-size:16px;font-weight:700;color:#38BDF8;">Global Cloud Hosting Solutions</div>
-    <div style="font-size:12px;color:#CBD5E1;">Deploy high-speed infrastructure worldwide with 99.99% uptime.</div>
-  </div>
-  <a href="https://example.com" target="_blank" rel="noopener noreferrer" style="background:#2563EB;color:#FFF;padding:8px 16px;border-radius:4px;font-size:12px;font-weight:600;text-decoration:none;">Explore Now &rarr;</a>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`,
     is_active: true,
-    device_target: 'desktop',
+    device_target: 'all',
     impressions: 24500,
     clicks: 1240,
   },
   {
     id: 'homepage_top',
-    name: 'Homepage Top Billboard',
+    name: 'Homepage Top Billboard (728x90)',
     format: 'banner',
-    ad_code: `<!-- Adsterra Homepage Billboard -->
-<div style="width:100%;padding:16px 24px;background:#F1F5F9;border:1px dashed #CBD5E1;border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
-  <div>
-    <span style="font-size:10px;font-weight:700;color:#64748B;letter-spacing:1px;">PROMOTED</span>
-    <h4 style="margin:2px 0;font-size:15px;color:#0F172A;">Digital Banking & Seamless International Remittance</h4>
-    <p style="margin:0;font-size:12px;color:#475569;">Zero fees on instant overseas transfers this week only.</p>
-  </div>
-  <a href="https://example.com" target="_blank" style="padding:6px 14px;background:#059669;color:#fff;border-radius:4px;font-size:12px;font-weight:bold;text-decoration:none;">Learn More</a>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`,
     is_active: true,
     device_target: 'all',
     impressions: 18400,
@@ -378,36 +362,29 @@ const INITIAL_ADS: AdSlot[] = [
   },
   {
     id: 'between_news',
-    name: 'Homepage In-Feed Native Banner',
-    format: 'native',
-    ad_code: `<!-- Adsterra Native Feed Card -->
-<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;padding:16px;display:flex;gap:16px;align-items:center;">
-  <div style="width:80px;height:60px;background:#E0F2FE;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#0284C7;font-weight:bold;font-size:12px;">TECH SPONSOR</div>
-  <div style="flex:1;">
-    <span style="font-size:11px;color:#0284C7;font-weight:bold;">FEATURED PARTNER</span>
-    <h4 style="margin:2px 0 4px;font-size:14px;color:#1E293B;">Next-Gen Enterprise Cyber Shield Platform</h4>
-    <p style="margin:0;font-size:12px;color:#64748B;">Protect critical databases and web infrastructure from zero-day threats.</p>
-  </div>
-  <a href="https://example.com" target="_blank" style="padding:6px 12px;border:1px solid #2563EB;color:#2563EB;border-radius:4px;font-size:11px;font-weight:bold;text-decoration:none;">Visit Website</a>
-</div>`,
+    name: 'Homepage In-Feed Native Banner (728x90)',
+    format: 'banner',
+    ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`,
     is_active: true,
     device_target: 'all',
     impressions: 12100,
     clicks: 650,
   },
   {
+    id: 'inter_category',
+    name: 'Homepage Inter-Category Leaderboard (728x90)',
+    format: 'banner',
+    ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`,
+    is_active: true,
+    device_target: 'all',
+    impressions: 16500,
+    clicks: 870,
+  },
+  {
     id: 'sidebar_banner',
     name: 'Article & Homepage Sidebar (300x250 Medium Rectangle)',
     format: 'banner',
-    ad_code: `<!-- Adsterra 300x250 Medium Rectangle -->
-<div style="width:300px;min-height:250px;margin:0 auto;background:#1E293B;color:#FFF;border-radius:8px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;text-align:center;">
-  <div style="font-size:10px;color:#94A3B8;letter-spacing:1px;text-transform:uppercase;">Advertisement</div>
-  <div>
-    <div style="font-size:18px;font-weight:bold;color:#38BDF8;margin-bottom:6px;">Master Data Science & AI</div>
-    <div style="font-size:12px;color:#CBD5E1;line-height:1.4;">Enroll in accredited online masterclasses with live mentors.</div>
-  </div>
-  <a href="https://example.com" target="_blank" style="background:#2563EB;color:#FFF;padding:10px;border-radius:6px;font-weight:bold;font-size:13px;text-decoration:none;margin-top:12px;">Get 50% Off &rarr;</a>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : '1547813ee5e9165c15f63eaa054cf877',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/1547813ee5e9165c15f63eaa054cf877"></script>`,
     is_active: true,
     device_target: 'all',
     impressions: 31200,
@@ -415,13 +392,9 @@ const INITIAL_ADS: AdSlot[] = [
   },
   {
     id: 'article_top',
-    name: 'Article Top Banner (Above Headline)',
+    name: 'Article Top Banner (Above Headline 728x90)',
     format: 'banner',
-    ad_code: `<!-- Adsterra Article Top Leaderboard -->
-<div style="width:100%;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;">
-  <span style="color:#64748B;"><strong style="color:#0F172A;">Sponsored:</strong> Compare the best corporate health insurance policies in 2026.</span>
-  <a href="https://example.com" target="_blank" style="color:#2563EB;font-weight:bold;text-decoration:none;">Compare Rates &rarr;</a>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`,
     is_active: true,
     device_target: 'all',
     impressions: 15600,
@@ -429,17 +402,9 @@ const INITIAL_ADS: AdSlot[] = [
   },
   {
     id: 'article_middle',
-    name: 'Article In-Read Content Banner',
+    name: 'Article In-Read Content Banner (300x250 Medium Rectangle)',
     format: 'banner',
-    ad_code: `<!-- Adsterra In-Read Banner -->
-<div style="margin:24px 0;padding:16px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
-  <div>
-    <span style="font-size:10px;font-weight:bold;color:#16A34A;">PARTNER SPOTLIGHT</span>
-    <h5 style="margin:2px 0;font-size:14px;color:#166534;">Smart Solar Energy Systems for Homes & Businesses</h5>
-    <p style="margin:0;font-size:12px;color:#15803D;">Reduce electricity bills by up to 80% with zero initial deposit.</p>
-  </div>
-  <a href="https://example.com" target="_blank" style="padding:8px 14px;background:#16A34A;color:#fff;border-radius:4px;font-size:12px;font-weight:bold;text-decoration:none;">Get Free Quote</a>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : '1547813ee5e9165c15f63eaa054cf877',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/1547813ee5e9165c15f63eaa054cf877"></script>`,
     is_active: true,
     device_target: 'all',
     impressions: 21300,
@@ -447,13 +412,9 @@ const INITIAL_ADS: AdSlot[] = [
   },
   {
     id: 'article_bottom',
-    name: 'Article Bottom Banner (Above Comments)',
+    name: 'Article Bottom Leaderboard (728x90)',
     format: 'banner',
-    ad_code: `<!-- Adsterra Article Footer Banner -->
-<div style="width:100%;padding:14px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;display:flex;align-items:center;justify-content:space-between;color:#92400E;">
-  <span style="font-size:13px;"><strong>Special Offer:</strong> Subscribe to PRIME NEWS GRAPH Premium for Ad-Free Reading.</span>
-  <a href="#newsletter" style="padding:6px 12px;background:#B45309;color:#FFF;border-radius:4px;font-size:11px;font-weight:bold;text-decoration:none;">Learn More</a>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`,
     is_active: true,
     device_target: 'all',
     impressions: 14700,
@@ -461,62 +422,64 @@ const INITIAL_ADS: AdSlot[] = [
   },
   {
     id: 'footer_banner',
-    name: 'Footer Leaderboard Banner',
+    name: 'Footer Leaderboard Banner (728x90)',
     format: 'banner',
-    ad_code: `<!-- Adsterra Footer Banner -->
-<div style="width:100%;max-width:728px;margin:0 auto;padding:12px;background:#0F172A;border-radius:6px;text-align:center;color:#94A3B8;font-size:12px;">
-  <span style="text-transform:uppercase;font-size:10px;display:block;margin-bottom:4px;">Advertisement</span>
-  <span style="color:#E2E8F0;">Looking for professional web development and digital marketing? <a href="https://example.com" target="_blank" style="color:#38BDF8;font-weight:bold;">Contact Our Agency &rarr;</a></span>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`,
     is_active: true,
-    device_target: 'desktop',
+    device_target: 'all',
     impressions: 9800,
     clicks: 390,
   },
   {
     id: 'mobile_banner',
-    name: 'Mobile Sticky / Floating Bottom Banner (320x50)',
+    name: 'Mobile Sticky Bottom Banner (320x50)',
     format: 'banner',
-    ad_code: `<!-- Adsterra Mobile Sticky Banner -->
-<div style="width:100%;height:50px;background:#1E293B;color:#FFF;display:flex;align-items:center;justify-content:space-between;padding:0 12px;box-sizing:border-box;font-size:11px;">
-  <div>
-    <span style="color:#38BDF8;font-weight:bold;">Special Deal:</span>
-    <span style="color:#CBD5E1;margin-left:4px;">Download Top Finance App Today</span>
-  </div>
-  <a href="https://example.com" target="_blank" style="background:#2563EB;color:#FFF;padding:4px 10px;border-radius:3px;font-size:10px;font-weight:bold;text-decoration:none;">Install</a>
-</div>`,
+    ad_code: `<script>\n  atOptions = {\n    'key' : '4fa6a8cbab261c96e980e6c49a014f9d',\n    'format' : 'iframe',\n    'height' : 50,\n    'width' : 320,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/4fa6a8cbab261c96e980e6c49a014f9d"></script>`,
     is_active: true,
     device_target: 'mobile',
     impressions: 28900,
     clicks: 1640,
   },
   {
+    id: 'native_container',
+    name: 'Adsterra Native 4:1 Container Banner',
+    format: 'native',
+    ad_code: `<script async="async" data-cfasync="false" src="https://bicea.org/21/5dcb5138b7cff3bbbaa59a0fa9bba75d"></script>\n<div id="container-5dcb5138b7cff3bbbaa59a0fa9bba75d"></div>`,
+    is_active: true,
+    device_target: 'all',
+    impressions: 14200,
+    clicks: 810,
+  },
+  {
     id: 'popunder',
     name: 'Adsterra Popunder Script Controller',
     format: 'popunder',
-    ad_code: `<!-- Adsterra Popunder Script (Controlled) -->
-<script type="text/javascript">
-  /* Adsterra Popunder Script Slot ID 4910291 */
-  console.log('[Adsterra] Popunder script initialized on frequency 1/24h');
-</script>`,
-    is_active: false,
+    ad_code: `<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`,
+    is_active: true,
     device_target: 'all',
     impressions: 5400,
     clicks: 310,
   },
   {
     id: 'social_bar',
-    name: 'Adsterra Social Bar Web Push / Banner',
+    name: 'Adsterra Social Bar Web Push Notification',
     format: 'social_bar',
-    ad_code: `<!-- Adsterra Social Bar Script (Controlled) -->
-<script type="text/javascript">
-  /* Adsterra Social Bar Widget */
-  console.log('[Adsterra] Social Bar ready for interactive notifications');
-</script>`,
+    ad_code: `<script data-cfasync="false" src="https://bicea.org/14/799ac73f4af6f2d0b12fc445e295b683"></script>\n<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`,
     is_active: true,
     device_target: 'all',
     impressions: 8900,
     clicks: 520,
+  },
+  {
+    id: 'direct_smartlink',
+    name: 'Adsterra Direct SmartLink (High-CTR Partner Link)',
+    format: 'direct_link',
+    ad_code: `https://arwf.org/4/a9f1d704984553dbce8f19128b098736`,
+    banner_target_link: `https://arwf.org/4/a9f1d704984553dbce8f19128b098736`,
+    is_active: true,
+    device_target: 'all',
+    impressions: 15400,
+    clicks: 920,
   }
 ];
 

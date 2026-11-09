@@ -4,7 +4,7 @@ import { DEFAULT_DATABASE_STATE } from '../data/fallbackData';
 const BASE_URL = '';
 
 // Local state cache in browser memory and localStorage
-const STORAGE_KEY = 'png_local_db_cache_v8';
+const STORAGE_KEY = 'png_local_db_cache_v9';
 
 function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
   if (!state) return state;
@@ -13,6 +13,75 @@ function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
     if (str.includes('/src/assets/images/')) {
       str = str.replaceAll('/src/assets/images/', '/assets/images/');
       state = JSON.parse(str);
+    }
+
+    // Auto-migrate any legacy Adsterra ad codes to user newest keys & scripts
+    if (Array.isArray(state.ads)) {
+      const default728 = `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`;
+      const default300 = `<script>\n  atOptions = {\n    'key' : '1547813ee5e9165c15f63eaa054cf877',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/1547813ee5e9165c15f63eaa054cf877"></script>`;
+      const default320 = `<script>\n  atOptions = {\n    'key' : '4fa6a8cbab261c96e980e6c49a014f9d',\n    'format' : 'iframe',\n    'height' : 50,\n    'width' : 320,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/4fa6a8cbab261c96e980e6c49a014f9d"></script>`;
+
+      state.ads = state.ads.map(ad => {
+        let code = ad.ad_code || '';
+        // 728x90 legacy replacement
+        if (code.includes('b4815a2fd87e3b5b988b1e480f060c36') || code.includes('Global Cloud Hosting') || code.includes('Digital Banking & Seamless')) {
+          return { ...ad, ad_code: default728 };
+        }
+        // 300x250 legacy replacement
+        if (code.includes('b7d833859be47ccda4fccadb7f2154e8') || code.includes('Master Data Science & AI')) {
+          return { ...ad, ad_code: default300 };
+        }
+        // 320x50 legacy replacement
+        if (code.includes('feaa78b521d61a9a46b260640dab7e68') || code.includes('Download Top Finance App')) {
+          return { ...ad, ad_code: default320 };
+        }
+        // Native container legacy replacement
+        if (code.includes('container-b62e49ee7287cc466d175832a73a3e12')) {
+          return {
+            ...ad,
+            ad_code: `<script async="async" data-cfasync="false" src="https://bicea.org/21/5dcb5138b7cff3bbbaa59a0fa9bba75d"></script>\n<div id="container-5dcb5138b7cff3bbbaa59a0fa9bba75d"></div>`
+          };
+        }
+        // Popunder legacy replacement
+        if (ad.id === 'popunder' && (code.includes('210e04c023065f4bd73f5a218a3af0ee') || code.includes('Slot ID 4910291'))) {
+          return {
+            ...ad,
+            ad_code: `<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`,
+            is_active: true
+          };
+        }
+        // Social bar legacy replacement
+        if (ad.id === 'social_bar' && (code.includes('046bfb413c6b955fc22060813fa0a79a') || code.includes('Social Bar ready for interactive'))) {
+          return {
+            ...ad,
+            ad_code: `<script data-cfasync="false" src="https://bicea.org/14/799ac73f4af6f2d0b12fc445e295b683"></script>\n<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`,
+            is_active: true
+          };
+        }
+        // Direct link legacy replacement
+        if (ad.id === 'direct_smartlink' && code.includes('7291dca1d41ac3667bd2ac15006500fd')) {
+          return {
+            ...ad,
+            ad_code: `https://arwf.org/4/a9f1d704984553dbce8f19128b098736`,
+            banner_target_link: `https://arwf.org/4/a9f1d704984553dbce8f19128b098736`
+          };
+        }
+        return ad;
+      });
+
+      // Ensure inter_category ad slot exists
+      if (!state.ads.some(a => a.id === 'inter_category')) {
+        state.ads.push({
+          id: 'inter_category',
+          name: 'Homepage Inter-Category Leaderboard (728x90)',
+          format: 'banner',
+          ad_code: default728,
+          is_active: true,
+          device_target: 'all',
+          impressions: 16500,
+          clicks: 870
+        });
+      }
     }
 
     // Ensure 100% of articles have valid, visible, non-broken images
@@ -50,7 +119,7 @@ function sanitizeDatabaseState(state: DatabaseState): DatabaseState {
 
 // Clean up legacy caches with broken /src/ paths once
 try {
-  ['png_local_db_cache_v1', 'png_local_db_cache_v2', 'png_local_db_cache_v3', 'png_local_db_cache_v4', 'png_local_db_cache_v5', 'png_local_db_cache_v6', 'png_local_db_cache_v7'].forEach(k => {
+  ['png_local_db_cache_v1', 'png_local_db_cache_v2', 'png_local_db_cache_v3', 'png_local_db_cache_v4', 'png_local_db_cache_v5', 'png_local_db_cache_v6', 'png_local_db_cache_v7', 'png_local_db_cache_v8'].forEach(k => {
     if (localStorage.getItem(k)) localStorage.removeItem(k);
   });
 } catch {}
@@ -79,7 +148,15 @@ function saveLocalState(state: DatabaseState) {
 
 function notifyDataUpdated(detail: Record<string, any> = {}) {
   try {
+    // 1. Same-window custom event
     window.dispatchEvent(new CustomEvent('png_data_updated', { detail }));
+
+    // 2. Cross-tab BroadcastChannel for instant real-time sync without page reload
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('png_news_updates');
+      bc.postMessage(detail);
+      bc.close();
+    }
   } catch {}
 }
 

@@ -1,14 +1,16 @@
 import React from 'react';
 import { ArrowRight, ChevronRight } from 'lucide-react';
-import { Article, Category } from '../types/news';
+import { Article, Category, AdSlot } from '../types/news';
 import { useLanguage } from '../context/LanguageContext';
 import { normalizeImageUrl, handleImageError } from '../utils/imageHelper';
+import { AdPlacement } from './AdPlacement';
 
 interface CategoryBlocksProps {
   categories: Category[];
   articles: Article[];
   onSelectCategory: (slug: string) => void;
   onSelectArticle: (article: Article) => void;
+  interCategoryAd?: AdSlot;
 }
 
 export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
@@ -16,6 +18,7 @@ export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
   articles,
   onSelectCategory,
   onSelectArticle,
+  interCategoryAd,
 }) => {
   const { lang } = useLanguage();
 
@@ -32,9 +35,10 @@ export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
         const subStories = catArticles.slice(1, 4);
 
         return (
-          <section key={cat.id} className="rounded-lg bg-white dark:bg-[#101D35] p-6 shadow-sm border border-slate-200/80 dark:border-slate-800 transition-colors">
-            {/* Category Header */}
-            <div className="flex items-center justify-between border-b-2 pb-3 mb-5" style={{ borderColor: cat.color || '#246BFD' }}>
+          <React.Fragment key={cat.id}>
+            <section className="rounded-lg bg-white dark:bg-[#101D35] p-6 shadow-sm border border-slate-200/80 dark:border-slate-800 transition-colors">
+              {/* Category Header */}
+              <div className="flex items-center justify-between border-b-2 pb-3 mb-5" style={{ borderColor: cat.color || '#246BFD' }}>
               <div className="flex items-center gap-2">
                 <span className="h-4 w-1.5 rounded-full" style={{ backgroundColor: cat.color || '#246BFD' }}></span>
                 <h3 className="text-xl font-bold font-serif text-[#101D35] dark:text-white">
@@ -110,6 +114,12 @@ export const CategoryBlocks: React.FC<CategoryBlocksProps> = ({
               </div>
             </div>
           </section>
+          {interCategoryAd && interCategoryAd.is_active && (
+            <div className="my-6">
+              <AdPlacement slot={interCategoryAd} />
+            </div>
+          )}
+        </React.Fragment>
         );
       })}
     </div>

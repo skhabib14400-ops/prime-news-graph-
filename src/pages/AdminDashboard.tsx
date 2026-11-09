@@ -2217,7 +2217,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                     আপনার দেওয়া সকল Adsterra Ads (৭২৮x৯০, ৩০০x২৫০, ৩২০x৫০, নেটিভ, পপআন্ডার, সোশ্যাল বার, ডাইরেক্ট লিঙ্ক) নির্দিষ্ট জায়গায় সেট করা আছে। নিচে যে কোনো স্লট এডিট বা পরিবর্তন করতে পারেন।
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const default728 = `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`;
+                      const default300 = `<script>\n  atOptions = {\n    'key' : '1547813ee5e9165c15f63eaa054cf877',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/1547813ee5e9165c15f63eaa054cf877"></script>`;
+                      const default320 = `<script>\n  atOptions = {\n    'key' : '4fa6a8cbab261c96e980e6c49a014f9d',\n    'format' : 'iframe',\n    'height' : 50,\n    'width' : 320,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/4fa6a8cbab261c96e980e6c49a014f9d"></script>`;
+
+                      for (const ad of ads) {
+                        let newCode = ad.ad_code;
+                        if (['header_banner', 'homepage_top', 'between_news', 'inter_category', 'article_top', 'article_bottom', 'footer_banner'].includes(ad.id)) {
+                          newCode = default728;
+                        } else if (['sidebar_banner', 'article_middle'].includes(ad.id)) {
+                          newCode = default300;
+                        } else if (ad.id === 'mobile_banner') {
+                          newCode = default320;
+                        } else if (ad.id === 'native_container') {
+                          newCode = `<script async="async" data-cfasync="false" src="https://bicea.org/21/5dcb5138b7cff3bbbaa59a0fa9bba75d"></script>\n<div id="container-5dcb5138b7cff3bbbaa59a0fa9bba75d"></div>`;
+                        } else if (ad.id === 'popunder') {
+                          newCode = `<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`;
+                        } else if (ad.id === 'social_bar') {
+                          newCode = `<script data-cfasync="false" src="https://bicea.org/14/799ac73f4af6f2d0b12fc445e295b683"></script>\n<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`;
+                        } else if (ad.id === 'direct_smartlink') {
+                          newCode = `https://arwf.org/4/a9f1d704984553dbce8f19128b098736`;
+                        }
+                        await api.saveAd({ ...ad, ad_code: newCode, is_active: true });
+                      }
+                      loadAllData();
+                      onRefreshData();
+                      showToast('✅ সকল Adsterra বিজ্ঞাপন স্লট সফলভাবে আপনার নতুন কোডে সিঙ্ক ও সক্রিয় হয়েছে!');
+                    }}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg shadow transition-all flex items-center gap-1.5 cursor-pointer text-xs"
+                  >
+                    <span>⚡ ১-ক্লিকে সকল নতুন কোড সিঙ্ক করুন</span>
+                  </button>
                   <div className="bg-white/10 px-3 py-2 rounded-lg border border-white/20 text-center">
                     <div className="font-bold text-emerald-400">অটো স্ক্রিপ্ট রানার</div>
                     <div className="text-[10px] text-blue-200">আইসোলেটেড আইফ্রেম কার্যকর</div>
@@ -2314,7 +2348,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           setEditingAd({
                             ...editingAd,
                             format: 'banner',
-                            ad_code: `<script>\n  atOptions = {\n    'key' : 'b4815a2fd87e3b5b988b1e480f060c36',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b4815a2fd87e3b5b988b1e480f060c36"></script>`
+                            ad_code: `<script>\n  atOptions = {\n    'key' : 'b713e6ef9bcbd950fde8de6fdbc2c316',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b713e6ef9bcbd950fde8de6fdbc2c316"></script>`
                           });
                         }}
                         className="px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200"
@@ -2327,7 +2361,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           setEditingAd({
                             ...editingAd,
                             format: 'banner',
-                            ad_code: `<script>\n  atOptions = {\n    'key' : 'b7d833859be47ccda4fccadb7f2154e8',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/b7d833859be47ccda4fccadb7f2154e8"></script>`
+                            ad_code: `<script>\n  atOptions = {\n    'key' : '1547813ee5e9165c15f63eaa054cf877',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/1547813ee5e9165c15f63eaa054cf877"></script>`
                           });
                         }}
                         className="px-2.5 py-1 text-[11px] font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded border border-indigo-200"
@@ -2340,7 +2374,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           setEditingAd({
                             ...editingAd,
                             format: 'banner',
-                            ad_code: `<script>\n  atOptions = {\n    'key' : 'feaa78b521d61a9a46b260640dab7e68',\n    'format' : 'iframe',\n    'height' : 50,\n    'width' : 320,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/feaa78b521d61a9a46b260640dab7e68"></script>`
+                            ad_code: `<script>\n  atOptions = {\n    'key' : '4fa6a8cbab261c96e980e6c49a014f9d',\n    'format' : 'iframe',\n    'height' : 50,\n    'width' : 320,\n    'params' : {}\n  };\n</script>\n<script src="https://bicea.org/22/4fa6a8cbab261c96e980e6c49a014f9d"></script>`
                           });
                         }}
                         className="px-2.5 py-1 text-[11px] font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 rounded border border-purple-200"
@@ -2353,7 +2387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           setEditingAd({
                             ...editingAd,
                             format: 'native',
-                            ad_code: `<script async="async" data-cfasync="false" src="https://bicea.org/21/b62e49ee7287cc466d175832a73a3e12"></script>\n<div id="container-b62e49ee7287cc466d175832a73a3e12"></div>`
+                            ad_code: `<script async="async" data-cfasync="false" src="https://bicea.org/21/5dcb5138b7cff3bbbaa59a0fa9bba75d"></script>\n<div id="container-5dcb5138b7cff3bbbaa59a0fa9bba75d"></div>`
                           });
                         }}
                         className="px-2.5 py-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded border border-emerald-200"
@@ -2366,7 +2400,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           setEditingAd({
                             ...editingAd,
                             format: 'popunder',
-                            ad_code: `<script data-cfasync="false" src="https://afders.org/1/210e04c023065f4bd73f5a218a3af0ee"></script>`
+                            ad_code: `<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`
                           });
                         }}
                         className="px-2.5 py-1 text-[11px] font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 rounded border border-amber-200"
@@ -2379,7 +2413,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           setEditingAd({
                             ...editingAd,
                             format: 'social_bar',
-                            ad_code: `<script data-cfasync="false" src="https://bicea.org/14/046bfb413c6b955fc22060813fa0a79a"></script>`
+                            ad_code: `<script data-cfasync="false" src="https://bicea.org/14/799ac73f4af6f2d0b12fc445e295b683"></script>\n<script data-cfasync="false" src="https://afders.org/1/4be7d82348a1be0e427f489cb21509ce"></script>`
                           });
                         }}
                         className="px-2.5 py-1 text-[11px] font-medium bg-rose-50 text-rose-700 hover:bg-rose-100 rounded border border-rose-200"
@@ -2392,7 +2426,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                           setEditingAd({
                             ...editingAd,
                             format: 'direct_link',
-                            ad_code: `https://arwf.org/4/7291dca1d41ac3667bd2ac15006500fd`
+                            ad_code: `https://arwf.org/4/a9f1d704984553dbce8f19128b098736`
                           });
                         }}
                         className="px-2.5 py-1 text-[11px] font-medium bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded border border-cyan-200"

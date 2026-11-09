@@ -87,7 +87,30 @@ export function NewsPortalApp() {
     };
 
     window.addEventListener('png_data_updated', handleDataUpdated);
-    return () => window.removeEventListener('png_data_updated', handleDataUpdated);
+
+    // Cross-tab real-time sync via BroadcastChannel & Storage Event
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('png_news_updates');
+        bc.onmessage = () => {
+          loadData();
+        };
+      } catch {}
+    }
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith('png_local_db_cache')) {
+        loadData();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('png_data_updated', handleDataUpdated);
+      window.removeEventListener('storage', handleStorageChange);
+      if (bc) bc.close();
+    };
   }, []);
 
   // Sync URL routes
@@ -162,6 +185,7 @@ export function NewsPortalApp() {
   const headerAd = ads.find(a => a.id === 'header_banner');
   const homepageTopAd = ads.find(a => a.id === 'homepage_top');
   const betweenNewsAd = ads.find(a => a.id === 'between_news');
+  const interCategoryAd = ads.find(a => a.id === 'inter_category');
   const sidebarAd = ads.find(a => a.id === 'sidebar_banner');
   const footerAd = ads.find(a => a.id === 'footer_banner');
   const mobileBannerAd = ads.find(a => a.id === 'mobile_banner');
@@ -234,6 +258,7 @@ export function NewsPortalApp() {
                     articles={articles}
                     onSelectCategory={navigateToCategory}
                     onSelectArticle={navigateToArticle}
+                    interCategoryAd={interCategoryAd}
                   />
                 </div>
 
