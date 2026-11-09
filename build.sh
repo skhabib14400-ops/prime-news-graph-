@@ -46,6 +46,14 @@ if [ -f "public/sitemap.xml" ]; then
   cp public/sitemap.xml dist/sitemap.xml
 fi
 
+if [ -f "public/.htaccess" ]; then
+  cp public/.htaccess dist/.htaccess
+fi
+
+if [ -f "vercel.json" ]; then
+  cp vercel.json dist/vercel.json
+fi
+
 if [ -f "netlify.toml" ]; then
   cp netlify.toml dist/netlify.toml
 fi

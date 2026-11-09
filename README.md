@@ -79,8 +79,8 @@ Trigger a redeploy after setting the variables.
 
 ## 🛡️ Administrative Control Panel & Credentials
 
-- **Admin URL:** `https://your-site.netlify.app/admin`
-- **Initial Super Admin Username:** `alamin11gtN`
+- **Admin URL:** `https://your-site.com/admin` (or `/admin` on any domain)
+- **Initial Super Admin Username:** `amazonshopping14264@gmail.com` (or `alamin11gtN`)
 - **Initial Super Admin Password:** `mdalamin11gtN`
 
 ### Multi-Factor Authentication Flow:

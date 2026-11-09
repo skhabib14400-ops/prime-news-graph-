@@ -17,6 +17,7 @@ import { AdsterraGlobalController } from './components/AdsterraGlobalController'
 import { ArticleDetail } from './pages/ArticleDetail';
 import { CategoryPage } from './pages/CategoryPage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { NewsAlertModal } from './components/NewsAlertModal';
 import { Article, Category, BreakingNewsItem, AdSlot, VideoItem, WebsiteSettings } from './types/news';
 import { api } from './services/api';
 import { X } from 'lucide-react';
@@ -367,6 +368,9 @@ export function NewsPortalApp() {
           </div>
         </div>
       )}
+
+      {/* 7. Prothom Alo Style News Alert Prompt & Top App Banner */}
+      <NewsAlertModal onNavigateToArticle={navigateToArticleBySlug} />
     </div>
   );
 }

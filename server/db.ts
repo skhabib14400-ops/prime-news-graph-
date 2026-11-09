@@ -649,11 +649,11 @@ class Database {
 
         // Ensure authorized super admin exists
         let adminUsers: AdminUser[] = parsed.admin_users || [];
-        const ownerRecord = adminUsers.find(a => a.username === 'amazonshopping14264@gmail.com' || a.username === 'alamin11gtN');
+        const ownerRecord = adminUsers.find(a => a.username === 'amazonshopping14264@gmail.com' || a.username === 'alamin11gtN' || a.email === 'amazonshopping14264@gmail.com');
         if (!ownerRecord || !ownerRecord.password_hash) {
           adminUsers = INITIAL_ADMINS;
         } else {
-          adminUsers = adminUsers.filter(a => a.username === 'amazonshopping14264@gmail.com' || a.username === 'alamin11gtN');
+          adminUsers = adminUsers.filter(a => a.username === 'amazonshopping14264@gmail.com' || a.username === 'alamin11gtN' || a.email === 'amazonshopping14264@gmail.com');
         }
 
         const loadedState: DatabaseState = {

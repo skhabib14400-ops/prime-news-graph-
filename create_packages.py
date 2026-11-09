@@ -50,7 +50,7 @@ with zipfile.ZipFile(github_zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
                 continue
             if "Screenrecording" in file or "Screenshot" in file:
                 continue
-            if file.startswith(".") and file not in {".gitignore", ".env.example"}:
+            if file.startswith(".") and file not in {".gitignore", ".env.example", ".htaccess"}:
                 continue
             file_path = os.path.join(root, file)
             arcname = os.path.relpath(file_path, ".")

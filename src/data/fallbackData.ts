@@ -375,7 +375,7 @@ export const DEFAULT_DATABASE_STATE = {
       "format": "banner",
       "ad_code": "<script>\n  atOptions = {\n    'key' : 'b4815a2fd87e3b5b988b1e480f060c36',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src=\"https://bicea.org/22/b4815a2fd87e3b5b988b1e480f060c36\"></script>",
       "is_active": true,
-      "device_target": "desktop",
+      "device_target": "all",
       "impressions": 24504,
       "clicks": 1240
     },
@@ -391,9 +391,9 @@ export const DEFAULT_DATABASE_STATE = {
     },
     {
       "id": "between_news",
-      "name": "Homepage In-Feed Native Banner (Container)",
-      "format": "native",
-      "ad_code": "<script async=\"async\" data-cfasync=\"false\" src=\"https://bicea.org/21/b62e49ee7287cc466d175832a73a3e12\"></script>\n<div id=\"container-b62e49ee7287cc466d175832a73a3e12\"></div>",
+      "name": "Homepage In-Feed Native Banner (728x90)",
+      "format": "banner",
+      "ad_code": "<script>\n  atOptions = {\n    'key' : 'b4815a2fd87e3b5b988b1e480f060c36',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src=\"https://bicea.org/22/b4815a2fd87e3b5b988b1e480f060c36\"></script>",
       "is_active": true,
       "device_target": "all",
       "impressions": 12104,
@@ -431,9 +431,9 @@ export const DEFAULT_DATABASE_STATE = {
     },
     {
       "id": "article_bottom",
-      "name": "Article Bottom Native Container (4:1)",
-      "format": "native",
-      "ad_code": "<script async=\"async\" data-cfasync=\"false\" src=\"https://bicea.org/21/b62e49ee7287cc466d175832a73a3e12\"></script>\n<div id=\"container-b62e49ee7287cc466d175832a73a3e12\"></div>",
+      "name": "Article Bottom Leaderboard (728x90)",
+      "format": "banner",
+      "ad_code": "<script>\n  atOptions = {\n    'key' : 'b4815a2fd87e3b5b988b1e480f060c36',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src=\"https://bicea.org/22/b4815a2fd87e3b5b988b1e480f060c36\"></script>",
       "is_active": true,
       "device_target": "all",
       "impressions": 14700,
@@ -445,7 +445,7 @@ export const DEFAULT_DATABASE_STATE = {
       "format": "banner",
       "ad_code": "<script>\n  atOptions = {\n    'key' : 'b4815a2fd87e3b5b988b1e480f060c36',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script src=\"https://bicea.org/22/b4815a2fd87e3b5b988b1e480f060c36\"></script>",
       "is_active": true,
-      "device_target": "desktop",
+      "device_target": "all",
       "impressions": 9804,
       "clicks": 390
     },
@@ -650,8 +650,8 @@ export const DEFAULT_DATABASE_STATE = {
   "admin_users": [
     {
       "id": "adm-owner-1",
-      "username": "amazonshopping14264@gmail.com",
-      "email": "amazonshopping14264@gmail.com",
+      "username": "admin@primenewsgraph.com",
+      "email": "admin@primenewsgraph.com",
       "password_hash": "af1f693274a83e28b6b6133c763ee276771fd0ae6cdc91bd99f86539cf461d37d49274ac72b1cb44f9fa890d79d61cc3daf683554c2d360bb4b9f5662cf10089",
       "salt": "df25215a032061b9f21413d5ef5924be",
       "role": "super_admin",
