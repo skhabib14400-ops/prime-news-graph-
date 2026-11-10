@@ -22,8 +22,10 @@ const config = {
 // Initialize Firebase App
 export const app = getApps().length === 0 ? initializeApp(config) : getApp();
 
-// Cloud Firestore with explicit database ID
-export const db = getFirestore(app, config.firestoreDatabaseId);
+// Cloud Firestore with explicit or default database
+export const db = config.firestoreDatabaseId && config.firestoreDatabaseId !== '(default)'
+  ? getFirestore(app, config.firestoreDatabaseId)
+  : getFirestore(app);
 
 // Firebase Authentication
 export const auth = getAuth(app);

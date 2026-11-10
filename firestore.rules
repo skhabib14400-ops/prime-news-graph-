@@ -7,11 +7,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isOwnerEmail() {
+      return isSignedIn() && request.auth.token.email.lower() == 'amazonshopping14264@gmail.com';
+    }
+
     function isAdmin() {
       return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email == 'amazonshopping14264@gmail.com' ||
-        request.auth.token.email == 'alamin11gtN@primenewsgraph.com'
+        isOwnerEmail() ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
@@ -20,9 +23,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Admins collection: strictly protected
+    // Admins collection: strictly protected against public registration
     match /admins/{adminId} {
-      allow read, write: if isAdmin();
+      allow read: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      // Only the verified owner can create or update their own admin record; public registration is completely blocked
+      allow write: if isOwnerEmail() && request.auth.uid == adminId;
     }
 
     // News Articles: public read for published, admin write

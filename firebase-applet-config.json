@@ -1,12 +1,10 @@
 {
-  "projectId": "industrious-case-r3rp2",
-  "appId": "1:860513530338:web:c733c3962749ab60efc9bb",
-  "apiKey": "AIzaSyBjRH-HPvmjLlMxVfIdtfCe-glOuJJF8WQ",
-  "authDomain": "industrious-case-r3rp2.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-primenewsgraph-0c968302-fd2d-4b39-996c-41ca3e3c9c2d",
-  "storageBucket": "industrious-case-r3rp2.firebasestorage.app",
-  "messagingSenderId": "860513530338",
-  "measurementId": "",
-  "oAuthClientId": "860513530338-o4fman47eig5bbig7odlas0rhochnjb7.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "projectId": "primenewsgraph-7466f",
+  "appId": "1:800333128646:web:211be3cf9a5938e0d208c7",
+  "apiKey": "AIzaSyBfuMrvWqAIs6EorssP0_W2gnZ1dapD66Q",
+  "authDomain": "primenewsgraph-7466f.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "primenewsgraph-7466f.firebasestorage.app",
+  "messagingSenderId": "800333128646",
+  "measurementId": ""
 }

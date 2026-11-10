@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { db } from './server/db.js';
 import { authSecurity } from './server/auth.js';
+import { verifyFirebaseIdToken, AUTHORIZED_OWNER_EMAIL } from './server/firebaseAuth.js';
 import {
   authRateLimiter,
   commentRateLimiter,
@@ -36,8 +37,8 @@ async function createServer() {
   // Apply General API Rate Limiting to all /api routes
   app.use('/api', generalApiLimiter);
 
-  // Strict Admin Authorization Middleware
-  const requireAdminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Strict Admin Authorization Middleware (Supports Firebase ID Tokens & Verified Sessions)
+  const requireAdminAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : (req.headers['x-admin-token'] as string);
 
@@ -49,6 +50,22 @@ async function createServer() {
       return res.status(401).json({ error: 'Unauthorized: Valid owner administrative session token required.' });
     }
 
+    // 1. Check if token is a Firebase ID Token (JWT structure)
+    if (token.includes('.') && token.length > 100) {
+      const verifiedFirebase = await verifyFirebaseIdToken(token);
+      if (verifiedFirebase && verifiedFirebase.email.toLowerCase() === AUTHORIZED_OWNER_EMAIL.toLowerCase()) {
+        (req as any).adminSession = {
+          token,
+          userId: verifiedFirebase.uid,
+          username: verifiedFirebase.email,
+          role: 'super_admin',
+          ip: clientIp,
+        };
+        return next();
+      }
+    }
+
+    // 2. Fallback to session token validation (Rule 12: preserve old login system until verified)
     const session = authSecurity.validateSession(token);
     if (!session) {
       authSecurity.logEvent('login_failed', 'expired_session', clientIp, userAgent, `Expired or invalid session token on ${req.method} ${req.path}`);
@@ -418,6 +435,52 @@ async function createServer() {
   });
 
   // --- Strict Administrative Authentication Endpoints ---
+
+  // Server-Side Firebase Authentication & Authorization Verification (Rule 7 & 8)
+  app.post('/api/auth/firebase-verify', authRateLimiter, async (req, res) => {
+    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    const authHeader = req.headers.authorization;
+    const token = req.body?.token || (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
+
+    if (!token) {
+      authSecurity.logEvent('login_failed', 'missing_token', clientIp, userAgent, 'Firebase token verification without token');
+      return res.status(400).json({ success: false, message: 'Firebase authentication ID token is required.' });
+    }
+
+    const verified = await verifyFirebaseIdToken(token);
+    if (!verified || verified.email.toLowerCase() !== AUTHORIZED_OWNER_EMAIL.toLowerCase()) {
+      authSecurity.recordFailedAttempt(clientIp);
+      authSecurity.logEvent('login_failed', verified?.email || 'unknown_firebase_user', clientIp, userAgent, 'Unauthorized Firebase account attempt');
+      return res.status(401).json({
+        success: false,
+        message: `Unauthorized. Only the designated portal owner account (${AUTHORIZED_OWNER_EMAIL}) has administrative privileges.`
+      });
+    }
+
+    // Reset failed rate limit counter on success
+    authSecurity.resetFailedAttempts(clientIp);
+
+    // Create verified server session
+    const session = authSecurity.createSession(verified.uid, verified.email, clientIp);
+    authSecurity.logEvent('login_success', verified.email, clientIp, userAgent, 'Authenticated via Firebase Authentication & server-side authorization');
+
+    return res.json({
+      success: true,
+      token: session.token,
+      firebaseToken: token,
+      user: {
+        id: verified.uid,
+        username: verified.email,
+        email: verified.email,
+        role: 'super_admin',
+        two_factor_enabled: false,
+        last_login: new Date().toISOString()
+      },
+      expiresAt: session.expiresAt
+    });
+  });
 
   // Anti-Bot Protection: Cryptographic Math Challenge
   app.get('/api/auth/captcha', (_req, res) => {

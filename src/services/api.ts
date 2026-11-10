@@ -1,5 +1,6 @@
 import { Article, Category, BreakingNewsItem, AdSlot, VideoItem, Author, CommentItem, NewsletterSubscriber, WebsiteSettings, AdminUser, DatabaseState } from '../types/news';
 import { DEFAULT_DATABASE_STATE } from '../data/fallbackData';
+import { firebaseAuthService } from './firebaseAuth';
 
 const BASE_URL = '';
 
@@ -959,6 +960,20 @@ export const api = {
   async verifySession(): Promise<{ valid: boolean; user?: AdminUser; expiresAt?: number }> {
     const token = localStorage.getItem('png_admin_token');
     const sessionExpires = localStorage.getItem('png_admin_expires');
+    const authProvider = sessionStorage.getItem('png_auth_provider');
+
+    // If Firebase Auth provider was used, verify live Firebase Auth state
+    if (authProvider === 'firebase') {
+      const fbUser = await firebaseAuthService.checkActiveSession();
+      if (fbUser) {
+        return {
+          valid: true,
+          user: fbUser,
+          expiresAt: sessionExpires ? parseInt(sessionExpires, 10) : Date.now() + 7200000
+        };
+      }
+    }
+
     if (!token) return { valid: false };
 
     // Strictly check token expiration
@@ -974,23 +989,7 @@ export const api = {
     });
     if (serverRes && serverRes.valid) return serverRes;
 
-    // Only accept validly issued sessions
-    const storedUser = localStorage.getItem('png_admin_user');
-    if (storedUser && token.startsWith('png_sec_')) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        const u = (parsed.username || '').toLowerCase();
-        if (u === 'amazonshopping14264@gmail.com' || u === 'alamin11gtn') {
-          return {
-            valid: true,
-            user: parsed,
-            expiresAt: sessionExpires ? parseInt(sessionExpires, 10) : Date.now() + 7200000
-          };
-        }
-      } catch {}
-    }
-
-    // Invalid or counterfeit session: purge and force login
+    // Invalid or unverified session: purge and force login
     localStorage.removeItem('png_admin_token');
     localStorage.removeItem('png_admin_user');
     localStorage.removeItem('png_admin_expires');
@@ -999,12 +998,17 @@ export const api = {
 
   async logout(): Promise<void> {
     try {
+      await firebaseAuthService.logout();
+    } catch {}
+
+    try {
       await safeJsonFetch(`${BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: getAuthHeaders(),
       });
     } finally {
       sessionStorage.removeItem('png_active_admin_session');
+      sessionStorage.removeItem('png_auth_provider');
       localStorage.removeItem('png_admin_token');
       localStorage.removeItem('png_admin_user');
       localStorage.removeItem('png_admin_expires');
@@ -1013,6 +1017,16 @@ export const api = {
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string; token?: string }> {
+    const authProvider = sessionStorage.getItem('png_auth_provider');
+    if (authProvider === 'firebase') {
+      const fbRes = await firebaseAuthService.changePassword(newPassword, currentPassword);
+      if (fbRes.success) {
+        return { success: true, message: fbRes.message };
+      } else {
+        return { success: false, message: fbRes.message };
+      }
+    }
+
     const serverRes = await safeJsonFetch<any>(`${BASE_URL}/api/auth/change-password`, {
       method: 'POST',
       headers: getAuthHeaders(),

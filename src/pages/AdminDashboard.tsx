@@ -61,6 +61,7 @@ import { api } from '../services/api';
 import { notificationService } from '../services/notifications';
 import { normalizeImageUrl, handleImageError, PRESET_NEWS_IMAGES, DEFAULT_FALLBACK_IMAGE, compressImage } from '../utils/imageHelper';
 import { AdPlacement } from '../components/AdPlacement';
+import { firebaseAuthService, AUTHORIZED_OWNER_EMAIL } from '../services/firebaseAuth';
 
 interface AdminDashboardProps {
   onBackToSite: () => void;
@@ -73,24 +74,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
   const [isVerifyingSession, setIsVerifyingSession] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
-  // Multi-Step Secure Authentication States
-  const [loginStep, setLoginStep] = useState<'credentials' | '2fa' | 'recovery'>('credentials');
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [captcha, setCaptcha] = useState<{ id: string; question: string } | null>(null);
-  const [captchaAnswer, setCaptchaAnswer] = useState('');
-  const [challengeId, setChallengeId] = useState('');
-  const [twoFactorCode, setTwoFactorCode] = useState('');
-  const [dev2FACode, setDev2FACode] = useState('');
-  const [isUsingRecoveryIn2FA, setIsUsingRecoveryIn2FA] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
+  // Firebase Authentication States (Dedicated Owner Access)
+  const [fbEmail, setFbEmail] = useState(AUTHORIZED_OWNER_EMAIL);
+  const [fbPassword, setFbPassword] = useState('');
+  const [fbLoading, setFbLoading] = useState(false);
+  const [fbError, setFbError] = useState('');
+  const [fbResetSent, setFbResetSent] = useState(false);
+  const [fbResetMsg, setFbResetMsg] = useState('');
 
-  // Emergency Password Reset State
-  const [recUsername, setRecUsername] = useState('amazonshopping14264@gmail.com');
-  const [recCode, setRecCode] = useState('');
-  const [recNewPassword, setRecNewPassword] = useState('');
-  const [recConfirmPassword, setRecConfirmPassword] = useState('');
+  // Firebase Password Management States in Settings Tab
+  const [fbCurrentPassword, setFbCurrentPassword] = useState('');
+  const [fbNewPassword, setFbNewPassword] = useState('');
+  const [fbConfirmNewPassword, setFbConfirmNewPassword] = useState('');
+  const [fbChangeLoading, setFbChangeLoading] = useState(false);
+  const [fbResetLinkLoading, setFbResetLinkLoading] = useState(false);
 
   // Password Change in Admin Settings
   const [changeCurrPassword, setChangeCurrPassword] = useState('');
@@ -172,22 +169,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const fetchCaptcha = async () => {
-    try {
-      const data = await api.getCaptcha();
-      setCaptcha(data);
-      setCaptchaAnswer('');
-    } catch {
-      // Retry once if needed
-    }
-  };
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      fetchCaptcha();
-    }
-  }, [isAuthenticated]);
-
   const loadAuditLogs = async () => {
     try {
       const logs = await api.getAuditLogs();
@@ -261,7 +242,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
     if (!activeSession || !token) {
       setIsAuthenticated(false);
       setIsVerifyingSession(false);
-      fetchCaptcha();
       return;
     }
 
@@ -277,142 +257,121 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
         localStorage.removeItem('png_admin_token');
         localStorage.removeItem('png_admin_user');
         localStorage.removeItem('png_admin_expires');
-        fetchCaptcha();
       }
       setIsVerifyingSession(false);
     }).catch(() => {
       setIsAuthenticated(false);
       setIsVerifyingSession(false);
-      fetchCaptcha();
     });
   }, []);
-
-  // Step 1: Submit Credentials + Anti-Bot CAPTCHA
-  const handleStep1Login = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginUsername.trim() || !loginPassword) {
-      setLoginError('Please enter your administrator username and password.');
-      return;
-    }
-    if (!captcha || !captchaAnswer.trim()) {
-      setLoginError('Please answer the security math question.');
-      return;
-    }
-
-    setLoginLoading(true);
-    setLoginError('');
-
-    try {
-      const res = await api.loginStep1({
-        username: loginUsername.trim(),
-        password: loginPassword,
-        captchaId: captcha.id,
-        captchaAnswer: captchaAnswer.trim(),
-      });
-
-      if (res.success && res.requires2FA) {
-        setChallengeId(res.challengeId || '');
-        if (res.dev2FACode) {
-          setDev2FACode(res.dev2FACode);
-        }
-        setLoginStep('2fa');
-      } else {
-        setLoginError(res.message || 'Invalid credentials.');
-        fetchCaptcha();
-      }
-    } catch (err: any) {
-      setLoginError(err.message || 'Authentication failed. Please verify credentials.');
-      fetchCaptcha();
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  // Step 2: Submit 2FA Code or Emergency Recovery Code
-  const handleStep2Login = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!twoFactorCode.trim()) {
-      setLoginError(isUsingRecoveryIn2FA ? 'Please enter a valid backup recovery code.' : 'Please enter the 6-digit verification code.');
-      return;
-    }
-
-    setLoginLoading(true);
-    setLoginError('');
-
-    try {
-      const res = await api.loginStep2({
-        challengeId,
-        code: twoFactorCode.trim(),
-        isRecoveryCode: isUsingRecoveryIn2FA,
-        username: loginUsername.trim(),
-      });
-
-      if (res.success && res.token && res.user) {
-        sessionStorage.setItem('png_active_admin_session', 'true');
-        localStorage.setItem('png_admin_token', res.token);
-        localStorage.setItem('png_admin_user', JSON.stringify(res.user));
-        setIsAuthenticated(true);
-        setCurrentUser(res.user);
-        loadAllData();
-        showToast('Authentication confirmed. Welcome to PRIME NEWS GRAPH CMS.');
-      } else {
-        setLoginError(res.message || 'Invalid verification code.');
-      }
-    } catch (err: any) {
-      setLoginError(err.message || 'Verification failed.');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  // Emergency Password Reset with Recovery Code
-  const handleEmergencyRecovery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!recUsername.trim() || !recCode.trim() || !recNewPassword) {
-      setLoginError('All fields are required.');
-      return;
-    }
-    if (recNewPassword.length < 8) {
-      setLoginError('New password must be at least 8 characters.');
-      return;
-    }
-    if (recNewPassword !== recConfirmPassword) {
-      setLoginError('New passwords do not match.');
-      return;
-    }
-
-    setLoginLoading(true);
-    setLoginError('');
-
-    try {
-      const res = await api.resetPasswordWithRecovery(
-        recUsername.trim(),
-        recCode.trim(),
-        recNewPassword
-      );
-
-      if (res.success && res.token && res.user) {
-        setIsAuthenticated(true);
-        setCurrentUser(res.user);
-        showToast('Password reset successfully via emergency recovery code.');
-      } else {
-        setLoginError(res.message || 'Recovery code failed.');
-      }
-    } catch (err: any) {
-      setLoginError(err.message || 'Emergency recovery failed.');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     await api.logout();
     setIsAuthenticated(false);
     setCurrentUser(null);
-    setLoginStep('credentials');
-    setLoginPassword('');
-    setTwoFactorCode('');
-    fetchCaptcha();
+    setFbPassword('');
+    setFbError('');
+    setFbResetMsg('');
+  };
+
+  // Firebase Owner Sign In
+  const handleFirebaseLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fbEmail.trim() || !fbPassword) {
+      setFbError('Please enter both your Firebase admin email and password.');
+      return;
+    }
+    setFbLoading(true);
+    setFbError('');
+    setFbResetMsg('');
+    try {
+      const res = await firebaseAuthService.loginWithFirebase(fbEmail.trim(), fbPassword);
+      if (res.success && res.user) {
+        setIsAuthenticated(true);
+        setCurrentUser(res.user);
+        loadAllData();
+        showToast('Firebase Authentication confirmed. Welcome, Newsroom Owner.');
+      } else {
+        setFbError(res.message || 'Firebase Authentication failed.');
+      }
+    } catch (err: any) {
+      setFbError(err.message || 'Authentication error occurred.');
+    } finally {
+      setFbLoading(false);
+    }
+  };
+
+  // Firebase Send Password Reset Link
+  const handleFirebaseSendPasswordReset = async () => {
+    setFbLoading(true);
+    setFbError('');
+    setFbResetMsg('');
+    try {
+      const targetEmail = fbEmail.trim() || AUTHORIZED_OWNER_EMAIL;
+      const res = await firebaseAuthService.sendPasswordReset(targetEmail);
+      if (res.success) {
+        setFbResetSent(true);
+        setFbResetMsg(res.message);
+        showToast('Password reset link sent to ' + targetEmail);
+      } else {
+        setFbError(res.message);
+      }
+    } catch (err: any) {
+      setFbError(err.message || 'Failed to send password reset email.');
+    } finally {
+      setFbLoading(false);
+    }
+  };
+
+  // Firebase Update Password from Settings Tab
+  const handleFirebaseUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fbNewPassword) {
+      alert('Please enter a new password.');
+      return;
+    }
+    if (fbNewPassword.length < 8) {
+      alert('New password must be at least 8 characters long.');
+      return;
+    }
+    if (fbNewPassword !== fbConfirmNewPassword) {
+      alert('New password and confirmation do not match.');
+      return;
+    }
+
+    setFbChangeLoading(true);
+    try {
+      const res = await firebaseAuthService.changePassword(fbNewPassword, fbCurrentPassword);
+      if (res.success) {
+        showToast('Firebase Administrator password successfully updated!');
+        setFbNewPassword('');
+        setFbConfirmNewPassword('');
+        setFbCurrentPassword('');
+      } else {
+        alert(res.message);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to update Firebase password');
+    } finally {
+      setFbChangeLoading(false);
+    }
+  };
+
+  // Direct Send Password Reset from Settings Tab
+  const handleSendFirebaseResetFromSettings = async () => {
+    setFbResetLinkLoading(true);
+    try {
+      const res = await firebaseAuthService.sendPasswordReset(AUTHORIZED_OWNER_EMAIL);
+      if (res.success) {
+        showToast(`Password reset link dispatched to ${AUTHORIZED_OWNER_EMAIL}`);
+      } else {
+        alert(res.message);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to send reset link');
+    } finally {
+      setFbResetLinkLoading(false);
+    }
   };
 
   // Change Admin Password Form
@@ -914,7 +873,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
     );
   }
 
-  // If Not Authenticated, Show Maximum Security Login Screen
+  // If Not Authenticated, Show Dedicated Firebase Authentication Login Screen
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#070D18] flex items-center justify-center p-4">
@@ -931,280 +890,101 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
             <p className="mt-1 text-[11px] text-slate-400 uppercase tracking-widest font-semibold">
               Authorized Newsroom Administrator Control
             </p>
-            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Maximum Security &bull; PBKDF2-SHA512 &bull; 2FA Protected
-            </div>
           </div>
 
-          {loginError && (
-            <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-300 flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-              <span className="leading-relaxed">{loginError}</span>
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+              <div className="flex items-center gap-1.5 font-bold">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                <span>Cloud Firestore &amp; Firebase Auth</span>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-300 leading-relaxed">
+                Only the verified owner account (<code className="font-mono text-emerald-400">{AUTHORIZED_OWNER_EMAIL}</code>) has administrative access.
+              </p>
             </div>
-          )}
 
-          {/* STEP 1: CREDENTIALS + ANTI-BOT CAPTCHA */}
-          {loginStep === 'credentials' && (
-            <form onSubmit={handleStep1Login} className="space-y-4">
+            {fbError && (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-300 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                <span className="leading-relaxed">{fbError}</span>
+              </div>
+            )}
+
+            {fbResetMsg && (
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-300 flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+                <span className="leading-relaxed">{fbResetMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleFirebaseLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Administrator Username / Email
+                  Authorized Owner Email
                 </label>
                 <input
-                  type="text"
-                  value={loginUsername}
-                  onChange={e => setLoginUsername(e.target.value)}
+                  type="email"
+                  value={fbEmail}
+                  onChange={e => setFbEmail(e.target.value)}
                   placeholder="amazonshopping14264@gmail.com"
                   required
-                  autoComplete="username"
+                  autoComplete="email"
                   className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#246BFD] focus:ring-1 focus:ring-[#246BFD]"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Master Password
+                  Firebase Account Password
                 </label>
                 <input
                   type="password"
-                  value={loginPassword}
-                  onChange={e => setLoginPassword(e.target.value)}
-                  placeholder="Enter secure password"
+                  value={fbPassword}
+                  onChange={e => setFbPassword(e.target.value)}
+                  placeholder="Enter Firebase password"
                   required
                   autoComplete="current-password"
                   className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#246BFD] focus:ring-1 focus:ring-[#246BFD]"
                 />
               </div>
 
-              {/* Anti-Bot Math Challenge */}
-              <div className="rounded-lg bg-slate-900/80 border border-slate-700 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <ShieldAlert className="h-3.5 w-3.5 text-[#246BFD]" />
-                    Bot Protection Challenge
-                  </span>
-                  <button
-                    type="button"
-                    onClick={fetchCaptcha}
-                    className="text-[11px] text-[#246BFD] hover:underline flex items-center gap-1"
-                    title="Refresh Challenge"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    <span>Refresh</span>
-                  </button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="px-3 py-1.5 rounded bg-slate-800 text-sm font-mono font-bold text-amber-300 border border-slate-700">
-                    {captcha ? captcha.question : 'Loading challenge...'}
-                  </div>
-                  <input
-                    type="text"
-                    value={captchaAnswer}
-                    onChange={e => setCaptchaAnswer(e.target.value)}
-                    placeholder="Your Answer"
-                    required
-                    className="flex-1 rounded bg-slate-950 border border-slate-700 px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[#246BFD]"
-                  />
-                </div>
-              </div>
-
               <button
                 type="submit"
-                disabled={loginLoading}
+                disabled={fbLoading}
                 className="w-full rounded-lg bg-[#246BFD] hover:bg-blue-600 py-3 text-sm font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                {loginLoading ? 'Verifying Credentials...' : 'Verify Credentials & Proceed to 2FA'}
-                <ArrowRight className="h-4 w-4" />
+                {fbLoading ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Verifying with Firebase...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In with Firebase</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
 
               <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
                 <button
                   type="button"
-                  onClick={() => {
-                    setLoginError('');
-                    setLoginStep('recovery');
-                  }}
-                  className="text-slate-400 hover:text-amber-400 transition-colors"
+                  onClick={handleFirebaseSendPasswordReset}
+                  disabled={fbLoading}
+                  className="text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
                 >
-                  Emergency Password Reset
+                  Forgot Password? Send Reset Link
                 </button>
                 <button
                   type="button"
                   onClick={onBackToSite}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   &larr; Back to Portal
                 </button>
               </div>
             </form>
-          )}
-
-          {/* STEP 2: TWO-FACTOR AUTHENTICATION */}
-          {loginStep === '2fa' && (
-            <form onSubmit={handleStep2Login} className="space-y-4">
-              <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
-                <span className="font-bold">Step 2: Dual-Layer Identity Verification</span>
-                <p className="mt-1 text-[11px] text-slate-300">
-                  {isUsingRecoveryIn2FA
-                    ? 'Enter one of your single-use backup recovery codes.'
-                    : `Enter the 6-digit verification code sent to owner account (${loginUsername}).`}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 text-center">
-                  {isUsingRecoveryIn2FA ? 'Emergency Recovery Code (PNG-XXXX-XXXX)' : '6-Digit Verification Code'}
-                </label>
-                <input
-                  type="text"
-                  value={twoFactorCode}
-                  onChange={e => setTwoFactorCode(e.target.value)}
-                  placeholder={isUsingRecoveryIn2FA ? 'PNG-9821-4192' : '123456'}
-                  maxLength={isUsingRecoveryIn2FA ? 16 : 6}
-                  required
-                  autoFocus
-                  className="w-full text-center tracking-widest font-mono text-lg font-bold rounded-lg bg-slate-900 border border-[#246BFD] px-3.5 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#246BFD]"
-                />
-              </div>
-
-              {/* Dev Simulation Helper */}
-              {dev2FACode && !isUsingRecoveryIn2FA && (
-                <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-center">
-                  <span className="text-[11px] text-amber-300 block mb-1">
-                    Simulator / Demo 2FA Code Generated:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setTwoFactorCode(dev2FACode)}
-                    className="font-mono text-sm font-bold text-amber-400 bg-amber-500/20 px-3 py-1 rounded hover:bg-amber-500/30 transition-colors"
-                  >
-                    {dev2FACode} (Click to Auto-fill Code)
-                  </button>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loginLoading}
-                className="w-full rounded-lg bg-[#246BFD] hover:bg-blue-600 py-3 text-sm font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {loginLoading ? 'Validating 2FA...' : 'Complete Authentication & Enter Dashboard'}
-                <Check className="h-4 w-4" />
-              </button>
-
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                <button
-                  type="button"
-                  onClick={() => setIsUsingRecoveryIn2FA(!isUsingRecoveryIn2FA)}
-                  className="text-amber-400 hover:underline"
-                >
-                  {isUsingRecoveryIn2FA ? 'Use 6-digit 2FA code instead' : 'Use Backup Recovery Code'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginError('');
-                    setLoginStep('credentials');
-                    fetchCaptcha();
-                  }}
-                  className="text-slate-400 hover:text-white"
-                >
-                  &larr; Back to Step 1
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* STEP 3: EMERGENCY RECOVERY & PASSWORD RESET */}
-          {loginStep === 'recovery' && (
-            <form onSubmit={handleEmergencyRecovery} className="space-y-4">
-              <div className="text-center p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                <span className="font-bold">Emergency Administrative Password Reset</span>
-                <p className="mt-1 text-[11px] text-slate-300">
-                  Provide your backup recovery code to reset credentials and regain full access.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                  Administrator Username
-                </label>
-                <input
-                  type="text"
-                  value={recUsername}
-                  onChange={e => setRecUsername(e.target.value)}
-                  required
-                  className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#246BFD]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                  Single-Use Recovery Code (PNG-XXXX-XXXX)
-                </label>
-                <input
-                  type="text"
-                  value={recCode}
-                  onChange={e => setRecCode(e.target.value)}
-                  placeholder="PNG-9821-4192"
-                  required
-                  className="w-full font-mono rounded-lg bg-slate-900 border border-slate-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#246BFD]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                  New Password (min 8 chars)
-                </label>
-                <input
-                  type="password"
-                  value={recNewPassword}
-                  onChange={e => setRecNewPassword(e.target.value)}
-                  placeholder="Enter strong new password"
-                  required
-                  className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#246BFD]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  value={recConfirmPassword}
-                  onChange={e => setRecConfirmPassword(e.target.value)}
-                  placeholder="Re-enter new password"
-                  required
-                  className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#246BFD]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loginLoading}
-                className="w-full rounded-lg bg-amber-500 hover:bg-amber-600 py-3 text-sm font-bold text-slate-950 shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {loginLoading ? 'Resetting Password...' : 'Reset Password & Restore Access'}
-                <Check className="h-4 w-4" />
-              </button>
-
-              <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginError('');
-                    setLoginStep('credentials');
-                    fetchCaptcha();
-                  }}
-                  className="text-xs text-slate-400 hover:text-white"
-                >
-                  &larr; Cancel and return to Login
-                </button>
-              </div>
-            </form>
-          )}
+          </div>
 
         </div>
       </div>
@@ -3598,6 +3378,109 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                   <div className="text-sm font-bold text-slate-900 mt-1">2h Inactivity</div>
                   <div className="text-[10px] text-blue-600 mt-0.5">Auto-Revocation</div>
                 </div>
+              </div>
+
+              {/* 0. Dedicated Firebase Cloud Authentication & Firestore Security */}
+              <div className="bg-white p-6 rounded-xl border border-blue-200 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-lg bg-blue-50 text-[#246BFD] flex items-center justify-center font-bold text-xs border border-blue-100">
+                      🔥
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900">Firebase Cloud Authentication &amp; Firestore RBAC</h3>
+                      <p className="text-[11px] text-slate-500">Live password management and Firestore administrative role enforcement</p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                    Primary Auth Provider
+                  </span>
+                </div>
+
+                {/* Status Badges */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 bg-slate-50 p-3 rounded-lg border border-slate-200/80 text-xs">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Owner Email</span>
+                    <span className="font-mono text-slate-800 font-semibold text-[11px]">{AUTHORIZED_OWNER_EMAIL}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Firebase Project</span>
+                    <span className="font-mono text-blue-700 font-semibold text-[11px]">primenewsgraph-7466f</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Firestore Database</span>
+                    <span className="font-mono text-slate-700 font-semibold text-[11px]">(default)</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Server API Bridge</span>
+                    <span className="font-mono text-emerald-700 font-semibold text-[11px]">/api/auth/firebase-verify</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleFirebaseUpdatePassword} className="space-y-3">
+                  <div className="text-xs font-bold text-slate-800">
+                    Update Firebase Account Password
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Current Firebase Password (for security verification)
+                    </label>
+                    <input
+                      type="password"
+                      value={fbCurrentPassword}
+                      onChange={e => setFbCurrentPassword(e.target.value)}
+                      placeholder="Enter existing Firebase password"
+                      className="w-full rounded border border-slate-300 p-2 text-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        New Firebase Password (min 8 chars)
+                      </label>
+                      <input
+                        type="password"
+                        value={fbNewPassword}
+                        onChange={e => setFbNewPassword(e.target.value)}
+                        placeholder="Enter new Firebase password"
+                        required
+                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Confirm New Firebase Password
+                      </label>
+                      <input
+                        type="password"
+                        value={fbConfirmNewPassword}
+                        onChange={e => setFbConfirmNewPassword(e.target.value)}
+                        placeholder="Confirm new Firebase password"
+                        required
+                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleSendFirebaseResetFromSettings}
+                      disabled={fbResetLinkLoading}
+                      className="px-3 py-2 rounded border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {fbResetLinkLoading ? 'Sending Reset Email...' : 'Send Password Reset Email to Owner'}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={fbChangeLoading}
+                      className="px-4 py-2 rounded bg-[#246BFD] hover:bg-blue-600 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {fbChangeLoading ? 'Updating Firebase Password...' : 'Save New Firebase Password'}
+                    </button>
+                  </div>
+                </form>
               </div>
 
               {/* 1. Change Master Password Form */}
