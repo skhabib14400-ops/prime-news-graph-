@@ -3076,20 +3076,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">X (Twitter) Profile</label>
-                      <input
-                        type="text"
-                        value={settings.twitter_url}
-                        onChange={e => setSettings({ ...settings, twitter_url: e.target.value })}
-                        className="w-full rounded border border-slate-300 p-2 text-xs"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">YouTube Channel</label>
                       <input
                         type="text"
                         value={settings.youtube_url}
                         onChange={e => setSettings({ ...settings, youtube_url: e.target.value })}
+                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Telegram Channel / Group</label>
+                      <input
+                        type="text"
+                        value={settings.telegram_url || ''}
+                        onChange={e => setSettings({ ...settings, telegram_url: e.target.value })}
+                        placeholder="https://t.me/primenewsgraph"
+                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">TikTok Official Profile</label>
+                      <input
+                        type="text"
+                        value={settings.tiktok_url || ''}
+                        onChange={e => setSettings({ ...settings, tiktok_url: e.target.value })}
+                        placeholder="https://tiktok.com/@primenewsgraph"
+                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Instagram Profile</label>
+                      <input
+                        type="text"
+                        value={settings.instagram_url || ''}
+                        onChange={e => setSettings({ ...settings, instagram_url: e.target.value })}
+                        placeholder="https://instagram.com/primenewsgraph"
+                        className="w-full rounded border border-slate-300 p-2 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">X (Twitter) Profile</label>
+                      <input
+                        type="text"
+                        value={settings.twitter_url}
+                        onChange={e => setSettings({ ...settings, twitter_url: e.target.value })}
                         className="w-full rounded border border-slate-300 p-2 text-xs"
                       />
                     </div>
@@ -3190,6 +3220,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
 
               {settings && (
                 <form onSubmit={handleSaveSettings} className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
+                  {/* Website Logo & Branding (Channel 24 Style or Custom Image) */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-900">Website Logo (Top-Left / Channel 24 Style)</label>
+                        <p className="text-[11px] text-slate-500">Enter a direct image URL or leave blank to use the modern Channel 24 circular live brand badge.</p>
+                      </div>
+                      {settings.logo_image_url && (
+                        <div className="h-8 max-w-[120px] bg-slate-900 px-2 rounded flex items-center">
+                          <img src={settings.logo_image_url} alt="Logo Preview" className="h-6 w-auto object-contain" />
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="url"
+                      value={settings.logo_image_url || ''}
+                      onChange={e => setSettings({ ...settings, logo_image_url: e.target.value })}
+                      placeholder="https://example.com/logo.png"
+                      className="w-full rounded border border-slate-300 p-2 text-xs"
+                    />
+                    <label className="flex items-center gap-2 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={settings.show_round_logo !== false}
+                        onChange={e => setSettings({ ...settings, show_round_logo: e.target.checked })}
+                        className="h-4 w-4 rounded text-[#246BFD]"
+                      />
+                      <span className="text-xs text-slate-700 font-medium">
+                        Show Circular Channel 24 Style LIVE 24/7 Brand Icon in Header when no image provided
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Public View Count Privacy Control */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">Public Post View Count Privacy</div>
+                      <div className="text-[11px] text-slate-500">Hide post view counts from public visitors on the frontend (View counts will remain visible exclusively in this Admin Dashboard).</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!settings.show_views_publicly}
+                        onChange={e => setSettings({ ...settings, show_views_publicly: !e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#246BFD]"></div>
+                    </label>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">Website Name</label>

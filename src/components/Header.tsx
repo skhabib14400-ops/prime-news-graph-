@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Search, Globe, Shield, Menu, X, ChevronRight, ChevronLeft, Volume2, Share2, Sun, Moon } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
-import { Category, BreakingNewsItem, AdSlot } from '../types/news';
+import { Category, BreakingNewsItem, AdSlot, WebsiteSettings } from '../types/news';
 import { AdPlacement } from './AdPlacement';
 
 interface HeaderProps {
   categories: Category[];
   breakingNews: BreakingNewsItem[];
   headerAd?: AdSlot;
+  settings?: WebsiteSettings | null;
   onSelectCategory: (slug: string) => void;
   onOpenSearch: () => void;
   onNavigateHome: () => void;
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   categories,
   breakingNews,
   headerAd,
+  settings,
   onSelectCategory,
   onOpenSearch,
   onNavigateHome,
@@ -68,20 +70,49 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="w-full bg-[#101D35] text-white">
-      {/* 1. Top Bar */}
-      <div className="border-b border-slate-700/60 bg-[#0A1324] px-4 py-1.5 text-xs text-slate-300">
+      {/* 1. Top Bar with Channel 24 Style Website Logo & Date */}
+      <div className="border-b border-slate-700/60 bg-[#0A1324] px-4 py-2 text-xs text-slate-300">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          {/* Date & Edition */}
-          <div className="flex items-center gap-3">
-            <span className="font-medium text-slate-200">{getFormattedDate()}</span>
-            <span className="hidden text-slate-500 sm:inline">|</span>
-            <span className="hidden tracking-wide text-slate-400 sm:inline">
+          {/* Top-Left: Channel 24 Style Website Logo & Date */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Website Logo Option */}
+            <div
+              onClick={onNavigateHome}
+              className="flex items-center gap-2 cursor-pointer group shrink-0"
+              title={settings?.site_name || 'PRIME NEWS GRAPH'}
+            >
+              {settings?.logo_image_url ? (
+                <img
+                  src={settings.logo_image_url}
+                  alt={settings?.site_name || 'Website Logo'}
+                  className="h-7 sm:h-8 max-w-[130px] object-contain rounded"
+                />
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#E11D48] via-[#DC2626] to-[#991B1B] text-white font-black text-[11px] shadow-sm border border-red-400/40 group-hover:scale-105 transition-transform tracking-tight">
+                    <span>24</span>
+                    <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  </div>
+                  <span className="text-xs sm:text-sm font-black font-serif text-white tracking-wider group-hover:text-red-400 transition-colors uppercase leading-none">
+                    {settings?.site_name ? settings.site_name.split(' ')[0] : 'PRIME'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <span className="text-slate-600">|</span>
+            <span className="font-medium text-slate-200 text-[11px] sm:text-xs">{getFormattedDate()}</span>
+            <span className="hidden sm:inline text-slate-600">|</span>
+            <span className="hidden tracking-wide text-slate-400 text-[11px] sm:text-xs sm:inline">
               {lang === 'bn' ? 'আন্তর্জাতিক সংস্করণ' : 'International Edition'}
             </span>
           </div>
 
           {/* Controls: Language, Theme, Search, Admin */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Global Theme Toggle */}
             <button
               type="button"
@@ -150,28 +181,10 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. Main Brand & Header Ad Area */}
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-6">
-        <div className="flex flex-col items-center justify-between gap-4 lg:flex-row">
-          {/* Logo Brand Lockup */}
-          <div
-            onClick={onNavigateHome}
-            className="group flex cursor-pointer flex-col items-center text-center lg:items-start lg:text-left"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl font-serif text-white group-hover:text-slate-200 transition-colors">
-                PRIME NEWS GRAPH
-              </span>
-            </div>
-            <p className="mt-1 text-xs tracking-widest text-[#246BFD] font-semibold uppercase">
-              {lang === 'bn'
-                ? 'সত্য ও বস্তুনিষ্ঠ আন্তর্জাতিক ডিজিটাল সাংবাদিকতা'
-                : 'Benchmark of Global Digital Journalism & Editorial Truth'}
-            </p>
-          </div>
-
-          {/* Adsterra Header Banner */}
-          <div className="w-full lg:w-auto">
+      {/* 2. Top Header 728x90 Adsterra Banner Slot (Cleanly Centered, Replacing large text logo) */}
+      <div className="w-full bg-[#0B1528] border-b border-slate-800 py-3 sm:py-4 px-4">
+        <div className="mx-auto max-w-7xl flex items-center justify-center">
+          <div className="w-full flex justify-center items-center overflow-hidden">
             <AdPlacement slot={headerAd} className="my-0" />
           </div>
         </div>
@@ -265,13 +278,28 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Mobile Header Menu Trigger */}
-          <div className="flex w-full items-center justify-between py-2.5 lg:hidden">
+          <div className="flex w-full items-center justify-between py-2 lg:hidden">
             <button
               type="button"
               onClick={onNavigateHome}
-              className="text-base font-bold font-serif text-white tracking-wide"
+              className="flex items-center gap-2 text-left"
             >
-              PRIME NEWS GRAPH
+              {settings?.logo_image_url ? (
+                <img
+                  src={settings.logo_image_url}
+                  alt={settings?.site_name || 'Logo'}
+                  className="h-6 w-auto object-contain rounded"
+                />
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DC2626] text-white font-black text-[10px] shadow-xs">
+                    24
+                  </div>
+                  <span className="text-sm font-bold font-serif text-white tracking-wide">
+                    {settings?.site_name || 'PRIME NEWS GRAPH'}
+                  </span>
+                </div>
+              )}
             </button>
 
             <button

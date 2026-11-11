@@ -7,7 +7,6 @@ import {
   Copy,
   Check,
   Clock,
-  Eye,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -15,9 +14,11 @@ import {
   MessageSquare,
   User,
   ArrowLeft,
-  Bookmark
+  Bookmark,
+  Youtube,
+  Instagram
 } from 'lucide-react';
-import { Article, CommentItem, AdSlot } from '../types/news';
+import { Article, CommentItem, AdSlot, WebsiteSettings } from '../types/news';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 import { AdPlacement } from '../components/AdPlacement';
@@ -28,6 +29,7 @@ interface ArticleDetailProps {
   article: Article;
   allArticles: Article[];
   ads: AdSlot[];
+  settings?: WebsiteSettings | null;
   onSelectArticle: (article: Article) => void;
   onBackToHome: () => void;
   onSelectCategory: (slug: string) => void;
@@ -37,6 +39,7 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
   article,
   allArticles,
   ads,
+  settings,
   onSelectArticle,
   onBackToHome,
   onSelectCategory,
@@ -165,32 +168,30 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
         </div>
       </div>
 
-      {/* Adsterra Article Top Leaderboard */}
-      <AdPlacement slot={adTop} className="mb-6" />
-
-      {/* Main Grid: Article Content (8 cols) + Sidebar (4 cols) */}
+      {/* Main Grid: Article Content (8 cols) + Sidebar (4 cols) - Post shifted straight to the top */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Article Column */}
         <article className="lg:col-span-8 bg-white dark:bg-[#101D35] p-6 sm:p-10 rounded-xl shadow-xs border border-slate-200/80 dark:border-slate-800 transition-colors article-content">
-          {/* Category Badge & Headline */}
-          <div>
-            <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#246BFD] mb-2">
-              {categoryName}
-            </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-serif leading-tight text-[#101D35] dark:text-white">
-              {title}
-            </h1>
+          
+          {/* 1. Featured Post Image (At the very top - Channel 24 Style) */}
+          <div className="overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 shadow-xs mb-6">
+            <img
+              src={normalizeImageUrl(article.featured_image, article.title_bn, article.category_slug)}
+              alt={title}
+              onError={handleImageError}
+              loading="eager"
+              referrerPolicy="no-referrer"
+              className="w-full max-h-[520px] object-cover"
+            />
+            {(article.image_caption_bn || article.image_caption_en) && (
+              <p className="p-3 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 italic">
+                {lang === 'bn' ? article.image_caption_bn : (article.image_caption_en || article.image_caption_bn)}
+              </p>
+            )}
           </div>
 
-          {/* Subtitle / Summary */}
-          {summary && (
-            <p className="mt-4 text-lg font-serif italic text-slate-600 dark:text-slate-300 border-l-2 border-[#246BFD] pl-4 leading-relaxed">
-              {summary}
-            </p>
-          )}
-
-          {/* Author Card & Publication Metadata */}
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-y border-slate-100 dark:border-slate-800 py-4 text-xs text-slate-500 dark:text-slate-400">
+          {/* 2. Reporter Name & Editorial Desk / Publication Date (Channel 24 Style) */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-y border-slate-200/80 dark:border-slate-800 py-3.5 text-xs text-slate-600 dark:text-slate-400">
             <div className="flex items-center gap-3">
               <img
                 src={article.author_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
@@ -199,73 +200,68 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
                 onError={(e) => {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
                 }}
-                className="h-10 w-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                className="h-10 w-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-2xs"
               />
               <div>
-                <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">{article.author_name}</div>
-                <div className="text-slate-500 dark:text-slate-400">{article.author_role || 'Editorial Desk'}</div>
+                <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                  {article.author_name}
+                </div>
+                <div className="text-slate-500 dark:text-slate-400 text-xs">
+                  {article.author_role || (lang === 'bn' ? 'বিশেষ প্রতিনিধি / নিউজ ডেস্ক' : 'Special Correspondent')}
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 text-[11px] sm:text-xs">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>{new Date(article.published_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US')}</span>
+                <span>
+                  {lang === 'bn' ? 'প্রকাশ: ' : 'Published: '}
+                  {new Date(article.published_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </span>
               </div>
-              <span aria-hidden="true">·</span>
+              <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
               <div className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5 text-slate-400" />
                 <span>{article.reading_time_minutes} {t('minutes_read')}</span>
               </div>
-              <span aria-hidden="true">·</span>
-              <div className="flex items-center gap-1 tabular-nums">
-                <Eye className="h-3.5 w-3.5 text-slate-400" />
-                <span>{article.views_count.toLocaleString()}</span>
-              </div>
             </div>
           </div>
 
-          {/* Social Share Toolbar */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700 no-print">
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+          {/* 3. Social Share Buttons (Facebook, YouTube, Telegram, TikTok, Instagram) & Copy Link Button */}
+          <div className="my-5 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 no-print">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
               <Share2 className="h-3.5 w-3.5 text-[#246BFD]" />
-              {t('share_article')}:
+              <span>{lang === 'bn' ? 'শেয়ার করুন:' : 'Share:'}</span>
             </span>
 
-            <div className="flex items-center gap-1.5">
-              {/* Facebook Share */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              {/* Facebook */}
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded bg-[#1877F2] px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg bg-[#1877F2] hover:bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white transition-all shadow-2xs"
                 title="Share on Facebook"
               >
                 <Facebook className="h-3.5 w-3.5 fill-white" />
-                <span>Facebook</span>
+                <span className="hidden sm:inline">Facebook</span>
               </a>
 
-              {/* WhatsApp Share */}
+              {/* YouTube */}
               <a
-                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${title} - ${articleUrl}`)}`}
+                href={settings?.youtube_url || 'https://www.youtube.com'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
-                title="Share on WhatsApp"
+                className="flex items-center gap-1.5 rounded-lg bg-[#FF0000] hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-all shadow-2xs"
+                title="Visit YouTube"
               >
-                <span>WhatsApp</span>
-              </a>
-
-              {/* X / Twitter */}
-              <a
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(articleUrl)}&text=${encodeURIComponent(title)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
-                title="Share on X"
-              >
-                <Twitter className="h-3.5 w-3.5 fill-white" />
-                <span>X</span>
+                <Youtube className="h-3.5 w-3.5 fill-white" />
+                <span className="hidden sm:inline">YouTube</span>
               </a>
 
               {/* Telegram */}
@@ -273,56 +269,72 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
                 href={`https://t.me/share/url?url=${encodeURIComponent(articleUrl)}&text=${encodeURIComponent(title)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded bg-[#0088cc] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-600 transition-colors"
-                title="Telegram"
+                className="flex items-center gap-1.5 rounded-lg bg-[#0088cc] hover:bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-all shadow-2xs"
+                title="Share on Telegram"
               >
-                <span>Telegram</span>
+                <Send className="h-3.5 w-3.5 text-white" />
+                <span className="hidden sm:inline">Telegram</span>
               </a>
 
-              {/* Copy Link */}
+              {/* TikTok */}
+              <a
+                href={settings?.tiktok_url || 'https://www.tiktok.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg bg-black hover:bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-white transition-all shadow-2xs border border-slate-700"
+                title="Visit TikTok"
+              >
+                <svg className="h-3.5 w-3.5 fill-white" viewBox="0 0 24 24">
+                  <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.97v7.54c0 1.93-.65 3.86-1.91 5.31-1.49 1.74-3.77 2.78-6.07 2.67-2.67-.1-5.11-1.56-6.42-3.87-1.39-2.42-1.25-5.5.34-7.79 1.48-2.14 4.04-3.37 6.64-3.16v4.08c-1.3-.17-2.68.32-3.48 1.34-.84 1.05-.88 2.58-.1 3.69.75 1.08 2.16 1.63 3.47 1.32 1.12-.25 1.99-1.22 2.05-2.37.04-2.89.02-5.78.02-8.67V0h-.97z"/>
+                </svg>
+                <span className="hidden sm:inline">TikTok</span>
+              </a>
+
+              {/* Instagram */}
+              <a
+                href={settings?.instagram_url || 'https://www.instagram.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-tr from-[#FD5949] via-[#D6249F] to-[#285AEB] hover:opacity-90 px-3 py-1.5 text-xs font-semibold text-white transition-all shadow-2xs"
+                title="Visit Instagram"
+              >
+                <Instagram className="h-3.5 w-3.5 text-white" />
+                <span className="hidden sm:inline">Instagram</span>
+              </a>
+
+              {/* Copy Link Button */}
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex items-center gap-1 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                title="Copy Link"
+                className="flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-750 border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
+                title="Copy Article Link"
               >
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5 text-slate-500" />}
-                <span>{copied ? t('link_copied') : t('copy_link')}</span>
-              </button>
-
-              {/* Print */}
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="hidden sm:flex items-center gap-1 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                title="Print Article"
-              >
-                <Printer className="h-3.5 w-3.5 text-slate-500" />
-                <span>{t('print_article')}</span>
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-slate-500" />}
+                <span>{copied ? (lang === 'bn' ? 'কপি হয়েছে' : 'Copied!') : (lang === 'bn' ? 'কপি লিংক' : 'Copy Link')}</span>
               </button>
             </div>
           </div>
 
-          {/* Featured Image */}
-          <div className="my-6 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
-            <img
-              src={normalizeImageUrl(article.featured_image, article.title_bn, article.category_slug)}
-              alt={title}
-              onError={handleImageError}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className="w-full max-h-[500px] object-cover"
-            />
-            {(article.image_caption_bn || article.image_caption_en) && (
-              <p className="p-2.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 italic">
-                {lang === 'bn' ? article.image_caption_bn : (article.image_caption_en || article.image_caption_bn)}
-              </p>
-            )}
+          {/* 4. Post Title (Headline) */}
+          <div className="mb-4">
+            <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#246BFD] mb-2">
+              {categoryName}
+            </span>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-serif leading-tight text-[#101D35] dark:text-white">
+              {title}
+            </h1>
           </div>
 
-          {/* Article Body Content */}
+          {/* 5. Post Summary / Excerpt */}
+          {summary && (
+            <p className="my-5 text-base sm:text-lg font-serif italic text-slate-700 dark:text-slate-300 border-l-4 border-[#246BFD] pl-4 py-2 leading-relaxed bg-blue-50/50 dark:bg-blue-950/20 rounded-r-lg">
+              {summary}
+            </p>
+          )}
+
+          {/* 6. Full Post Description / Body Text */}
           <div
-            className={`prose prose-slate dark:prose-invert max-w-none leading-relaxed ${fontSizeClass} text-slate-800 dark:text-slate-200 space-y-4`}
+            className={`prose prose-slate dark:prose-invert max-w-none leading-relaxed ${fontSizeClass} text-slate-800 dark:text-slate-200 space-y-4 my-6`}
             dangerouslySetInnerHTML={{ __html: content }}
           />
 

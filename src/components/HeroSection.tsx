@@ -69,11 +69,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <span>{new Date(leadStory.published_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US')}</span>
             <span aria-hidden="true">·</span>
             <span>{leadStory.reading_time_minutes} {t('minutes_read')}</span>
-            <span aria-hidden="true">·</span>
-            <span className="tabular-nums flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {leadStory.views_count.toLocaleString()}
-            </span>
           </div>
         </article>
 

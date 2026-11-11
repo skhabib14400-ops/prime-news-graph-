@@ -113,6 +113,8 @@ export interface WebsiteSettings {
   site_tagline_bn: string;
   site_tagline_en: string;
   logo_text: string;
+  logo_image_url?: string;
+  show_round_logo?: boolean;
   default_language: 'bn' | 'en';
   contact_email: string;
   contact_phone: string;
@@ -124,6 +126,8 @@ export interface WebsiteSettings {
   instagram_url: string;
   whatsapp_number: string;
   telegram_url: string;
+  tiktok_url?: string;
+  show_views_publicly?: boolean;
   homepage_sections: {
     hero: boolean;
     breaking: boolean;

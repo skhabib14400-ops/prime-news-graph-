@@ -43,10 +43,7 @@ export const PopularNews: React.FC<PopularNewsProps> = ({ articles, onSelectArti
                 {lang === 'bn' ? art.title_bn : art.title_en}
               </h4>
               <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
-                <span className="flex items-center gap-1 tabular-nums">
-                  <Eye className="h-3 w-3" />
-                  {art.views_count.toLocaleString()}
-                </span>
+                <span>{new Date(art.published_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US')}</span>
                 <span aria-hidden="true">·</span>
                 <span>{art.reading_time_minutes}m</span>
               </div>

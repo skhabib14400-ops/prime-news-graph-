@@ -105,10 +105,7 @@ export const LatestNewsFeed: React.FC<LatestNewsFeedProps> = ({
                 <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400">
                   <span>{new Date(article.published_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US')}</span>
                   <span aria-hidden="true">·</span>
-                  <span className="tabular-nums flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    {article.views_count.toLocaleString()}
-                  </span>
+                  <span>{article.reading_time_minutes || 3} min read</span>
                 </div>
               </div>
             </div>

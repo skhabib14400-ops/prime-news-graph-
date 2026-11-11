@@ -206,11 +206,12 @@ export function NewsPortalApp() {
       {/* Adsterra Global Controller: Popunder & Social Bar Push */}
       <AdsterraGlobalController ads={ads} />
 
-      {/* 1. Header */}
+      {/* 1. Header with Channel 24 Style Logo & 728x90 Header Ad */}
       <Header
         categories={categories}
         breakingNews={breakingNews}
         headerAd={headerAd}
+        settings={settings}
         onSelectCategory={navigateToCategory}
         onOpenSearch={() => setIsSearchOpen(true)}
         onNavigateHome={navigateToHome}
@@ -221,15 +222,10 @@ export function NewsPortalApp() {
 
       {/* 2. Main Body Content Based on Current View */}
       <main className="flex-1">
-        {/* VIEW A: HOMEPAGE */}
+        {/* VIEW A: HOMEPAGE (Shifted post content straight to the top) */}
         {currentView === 'home' && (
           <>
-            {/* Homepage Top Billboard Ad */}
-            <div className="mx-auto max-w-7xl px-4 pt-4">
-              <AdPlacement slot={homepageTopAd} />
-            </div>
-
-            {/* Hero News Section */}
+            {/* Hero News Section (starts directly at top without duplicate blocking ad) */}
             <HeroSection
               leadStory={leadStory}
               secondaryStories={secondaryStories}
@@ -293,6 +289,7 @@ export function NewsPortalApp() {
               article={selectedArticle}
               allArticles={articles}
               ads={ads}
+              settings={settings}
               onSelectArticle={navigateToArticle}
               onBackToHome={navigateToHome}
               onSelectCategory={navigateToCategory}

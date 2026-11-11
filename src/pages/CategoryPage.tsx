@@ -113,10 +113,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
 
                   <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
                     <span className="truncate max-w-[120px]">{article.author_name}</span>
-                    <span className="tabular-nums flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      {article.views_count.toLocaleString()}
-                    </span>
+                    <span>{new Date(article.published_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US')}</span>
                   </div>
                 </article>
               ))}
