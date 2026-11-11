@@ -113,6 +113,7 @@ export interface WebsiteSettings {
   site_tagline_bn: string;
   site_tagline_en: string;
   logo_text: string;
+  logo_badge_text?: string;
   logo_image_url?: string;
   show_round_logo?: boolean;
   default_language: 'bn' | 'en';

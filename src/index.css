@@ -74,6 +74,16 @@
   }
 }
 
+/* Dynamic Article Font Scaling (A-, A, A+) */
+.article-dynamic-content p,
+.article-dynamic-content span,
+.article-dynamic-content div,
+.article-dynamic-content li,
+.article-dynamic-content blockquote {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
 /* Ensure no elements cause horizontal scrolling on mobile */
 html, body {
   overflow-x: hidden;

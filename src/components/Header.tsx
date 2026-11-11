@@ -90,14 +90,14 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <div className="flex items-center gap-1.5">
                   <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#E11D48] via-[#DC2626] to-[#991B1B] text-white font-black text-[11px] shadow-sm border border-red-400/40 group-hover:scale-105 transition-transform tracking-tight">
-                    <span>24</span>
+                    <span>{settings?.logo_badge_text || '24'}</span>
                     <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                   </div>
                   <span className="text-xs sm:text-sm font-black font-serif text-white tracking-wider group-hover:text-red-400 transition-colors uppercase leading-none">
-                    {settings?.site_name ? settings.site_name.split(' ')[0] : 'PRIME'}
+                    {settings?.logo_text || (settings?.site_name ? settings.site_name.split(' ')[0] : 'PRIME')}
                   </span>
                 </div>
               )}
@@ -293,10 +293,10 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <div className="flex items-center gap-1.5">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DC2626] text-white font-black text-[10px] shadow-xs">
-                    24
+                    {settings?.logo_badge_text || '24'}
                   </div>
                   <span className="text-sm font-bold font-serif text-white tracking-wide">
-                    {settings?.site_name || 'PRIME NEWS GRAPH'}
+                    {settings?.logo_text || settings?.site_name || 'PRIME NEWS GRAPH'}
                   </span>
                 </div>
               )}

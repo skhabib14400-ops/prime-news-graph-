@@ -45,7 +45,7 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
   onSelectCategory,
 }) => {
   const { lang, t } = useLanguage();
-  const [fontSizeClass, setFontSizeClass] = useState<'text-base' | 'text-lg' | 'text-xl'>('text-lg');
+  const [fontSizeLevel, setFontSizeLevel] = useState<'sm' | 'md' | 'lg'>('md');
   const [copied, setCopied] = useState(false);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [commentName, setCommentName] = useState('');
@@ -53,6 +53,28 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
   const [commentContent, setCommentContent] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentSuccess, setCommentSuccess] = useState(false);
+
+  // Dynamic font scaling configuration
+  const fontSizeMap = {
+    sm: {
+      body: '15px',
+      title: '1.65rem',
+      summary: '15px',
+      lineHeight: '1.75'
+    },
+    md: {
+      body: '18.5px',
+      title: '2.15rem',
+      summary: '18px',
+      lineHeight: '1.85'
+    },
+    lg: {
+      body: '24px',
+      title: '2.75rem',
+      summary: '22px',
+      lineHeight: '2.05'
+    }
+  };
 
   // Automatically increment view count once on mount
   useEffect(() => {
@@ -124,9 +146,9 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
   const categoryName = lang === 'bn' ? article.category_name_bn : article.category_name_en;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      {/* Top Breadcrumb & Back */}
-      <div className="mb-6 flex items-center justify-between text-xs text-slate-500">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+      {/* Top Breadcrumb & Text Size Adjuster */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
         <div className="flex items-center gap-2">
           <button
             onClick={onBackToHome}
@@ -144,31 +166,56 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
           </button>
         </div>
 
-        {/* Text Size Adjuster */}
-        <div className="flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
-          <span className="text-[11px] text-slate-400 mr-1">Font:</span>
+        {/* Text Size Adjuster (A-, A, A+) */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 px-1">
+            {lang === 'bn' ? 'ফন্ট সাইজ:' : 'Font:'}
+          </span>
           <button
-            onClick={() => setFontSizeClass('text-base')}
-            className={`px-1.5 py-0.5 rounded text-xs ${fontSizeClass === 'text-base' ? 'bg-white font-bold shadow-xs text-[#246BFD]' : 'text-slate-600'}`}
+            type="button"
+            onClick={() => setFontSizeLevel('sm')}
+            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+              fontSizeLevel === 'sm'
+                ? 'bg-[#246BFD] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+            title="Smaller Font (A-)"
           >
             A-
           </button>
           <button
-            onClick={() => setFontSizeClass('text-lg')}
-            className={`px-1.5 py-0.5 rounded text-xs ${fontSizeClass === 'text-lg' ? 'bg-white font-bold shadow-xs text-[#246BFD]' : 'text-slate-600'}`}
+            type="button"
+            onClick={() => setFontSizeLevel('md')}
+            className={`px-2.5 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+              fontSizeLevel === 'md'
+                ? 'bg-[#246BFD] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+            title="Default Font (A)"
           >
             A
           </button>
           <button
-            onClick={() => setFontSizeClass('text-xl')}
-            className={`px-1.5 py-0.5 rounded text-xs ${fontSizeClass === 'text-xl' ? 'bg-white font-bold shadow-xs text-[#246BFD]' : 'text-slate-600'}`}
+            type="button"
+            onClick={() => setFontSizeLevel('lg')}
+            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+              fontSizeLevel === 'lg'
+                ? 'bg-[#246BFD] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+            title="Larger Font (A+)"
           >
             A+
           </button>
         </div>
       </div>
 
-      {/* Main Grid: Article Content (8 cols) + Sidebar (4 cols) - Post shifted straight to the top */}
+      {/* 1. Adsterra 728x90 Banner Ad (Positioned exactly right above the post content card, as requested) */}
+      <div className="mb-6 w-full flex justify-center items-center overflow-hidden">
+        <AdPlacement slot={adTop} className="my-0 w-full" />
+      </div>
+
+      {/* Main Grid: Article Content (8 cols) + Sidebar (4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Article Column */}
         <article className="lg:col-span-8 bg-white dark:bg-[#101D35] p-6 sm:p-10 rounded-xl shadow-xs border border-slate-200/80 dark:border-slate-800 transition-colors article-content">
@@ -315,26 +362,39 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
             </div>
           </div>
 
-          {/* 4. Post Title (Headline) */}
+          {/* 4. Post Title (Headline - dynamically scalable with A-, A, A+) */}
           <div className="mb-4">
             <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#246BFD] mb-2">
               {categoryName}
             </span>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-serif leading-tight text-[#101D35] dark:text-white">
+            <h1
+              style={{ fontSize: fontSizeMap[fontSizeLevel].title }}
+              className="font-bold font-serif leading-tight text-[#101D35] dark:text-white transition-all duration-150"
+            >
               {title}
             </h1>
           </div>
 
-          {/* 5. Post Summary / Excerpt */}
+          {/* 5. Post Summary / Excerpt (dynamically scalable) */}
           {summary && (
-            <p className="my-5 text-base sm:text-lg font-serif italic text-slate-700 dark:text-slate-300 border-l-4 border-[#246BFD] pl-4 py-2 leading-relaxed bg-blue-50/50 dark:bg-blue-950/20 rounded-r-lg">
+            <p
+              style={{
+                fontSize: fontSizeMap[fontSizeLevel].summary,
+                lineHeight: fontSizeMap[fontSizeLevel].lineHeight
+              }}
+              className="my-5 font-serif italic text-slate-700 dark:text-slate-300 border-l-4 border-[#246BFD] pl-4 py-2 bg-blue-50/50 dark:bg-blue-950/20 rounded-r-lg transition-all duration-150"
+            >
               {summary}
             </p>
           )}
 
-          {/* 6. Full Post Description / Body Text */}
+          {/* 6. Full Post Description / Body Text (dynamically scalable with A-, A, A+) */}
           <div
-            className={`prose prose-slate dark:prose-invert max-w-none leading-relaxed ${fontSizeClass} text-slate-800 dark:text-slate-200 space-y-4 my-6`}
+            style={{
+              fontSize: fontSizeMap[fontSizeLevel].body,
+              lineHeight: fontSizeMap[fontSizeLevel].lineHeight,
+            }}
+            className="article-dynamic-content prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 space-y-4 my-6 transition-all duration-150"
             dangerouslySetInnerHTML={{ __html: content }}
           />
 

@@ -3221,36 +3221,117 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite, on
               {settings && (
                 <form onSubmit={handleSaveSettings} className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
                   {/* Website Logo & Branding (Channel 24 Style or Custom Image) */}
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
-                    <div className="flex items-center justify-between">
+                  <div className="p-5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-900">Website Logo (Top-Left / Channel 24 Style)</label>
-                        <p className="text-[11px] text-slate-500">Enter a direct image URL or leave blank to use the modern Channel 24 circular live brand badge.</p>
+                        <label className="block text-sm font-bold text-slate-900">
+                          Website Logo &amp; Header Branding
+                        </label>
+                        <p className="text-xs text-slate-500">
+                          Upload your newsroom logo file, enter an image URL, or customize the Channel 24 style live brand badge.
+                        </p>
                       </div>
-                      {settings.logo_image_url && (
-                        <div className="h-8 max-w-[120px] bg-slate-900 px-2 rounded flex items-center">
-                          <img src={settings.logo_image_url} alt="Logo Preview" className="h-6 w-auto object-contain" />
-                        </div>
-                      )}
+                      
+                      {/* Live Header Preview */}
+                      <div className="bg-[#0A1324] px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Live Preview:</span>
+                        {settings.logo_image_url ? (
+                          <img src={settings.logo_image_url} alt="Logo" className="h-6 w-auto object-contain rounded" />
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#E11D48] via-[#DC2626] to-[#991B1B] text-white font-black text-[10px]">
+                              <span>{settings.logo_badge_text || '24'}</span>
+                            </div>
+                            <span className="text-xs font-black font-serif text-white tracking-wider uppercase">
+                              {settings.logo_text || 'PRIME'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <input
-                      type="url"
-                      value={settings.logo_image_url || ''}
-                      onChange={e => setSettings({ ...settings, logo_image_url: e.target.value })}
-                      placeholder="https://example.com/logo.png"
-                      className="w-full rounded border border-slate-300 p-2 text-xs"
-                    />
-                    <label className="flex items-center gap-2 cursor-pointer pt-1">
-                      <input
-                        type="checkbox"
-                        checked={settings.show_round_logo !== false}
-                        onChange={e => setSettings({ ...settings, show_round_logo: e.target.checked })}
-                        className="h-4 w-4 rounded text-[#246BFD]"
-                      />
-                      <span className="text-xs text-slate-700 font-medium">
-                        Show Circular Channel 24 Style LIVE 24/7 Brand Icon in Header when no image provided
-                      </span>
-                    </label>
+
+                    {/* Direct Image File Upload */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Upload Logo File (PNG / JPG / SVG / WEBP)
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setSettings({ ...settings, logo_image_url: reader.result as string });
+                                showToast('Logo image uploaded. Click Save Website Settings to apply.');
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#246BFD] file:text-white hover:file:bg-blue-600 cursor-pointer"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Or Enter Logo Direct URL
+                        </label>
+                        <input
+                          type="url"
+                          value={settings.logo_image_url || ''}
+                          onChange={e => setSettings({ ...settings, logo_image_url: e.target.value })}
+                          placeholder="https://example.com/logo.png"
+                          className="w-full rounded border border-slate-300 p-2 text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    {settings.logo_image_url && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSettings({ ...settings, logo_image_url: '' });
+                            showToast('Switched to Channel 24 dynamic badge.');
+                          }}
+                          className="text-xs text-red-600 hover:text-red-700 font-semibold underline cursor-pointer"
+                        >
+                          Remove Image &amp; Use Channel 24 Style Badge
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Channel 24 Style Badge Settings */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200/80">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Circular Badge Text / Number (Channel 24 Style)
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.logo_badge_text || '24'}
+                          onChange={e => setSettings({ ...settings, logo_badge_text: e.target.value })}
+                          placeholder="e.g. 24 or PNG"
+                          maxLength={6}
+                          className="w-full rounded border border-slate-300 p-2 text-xs font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Brand Slogan / Wordmark
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.logo_text || 'PRIME'}
+                          onChange={e => setSettings({ ...settings, logo_text: e.target.value })}
+                          placeholder="e.g. PRIME or PRIME NEWS"
+                          className="w-full rounded border border-slate-300 p-2 text-xs font-bold"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Public View Count Privacy Control */}
